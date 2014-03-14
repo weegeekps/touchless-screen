@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30110.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TouchlessScreenLibrary", "TouchlessScreenLibrary\TouchlessScreenLibrary.csproj", "{00F7BA18-BD4C-4035-A8B7-917630F01826}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TouchlessScreenTestApp", "TouchlessScreenTestApp\TouchlessScreenTestApp.csproj", "{BE4D1CAF-04DA-46AD-8C80-433F366BE084}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TouchlessScreenService", "TouchlessScreenService\TouchlessScreenService.csproj", "{199C0791-0A35-4C27-B96F-ED6BEC2F9D6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TouchlessScreenLibraryUnitTests", "TouchlessScreenLibraryUnitTests\TouchlessScreenLibraryUnitTests.csproj", "{3320F160-D2FB-4D73-8DE0-90BA31F44010}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{63763B11-1667-4163-8373-AC97DDA82B16}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug (No Analysis)|Any CPU = Debug (No Analysis)|Any CPU
+		Debug (Service)|Any CPU = Debug (Service)|Any CPU
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{00F7BA18-BD4C-4035-A8B7-917630F01826}.Debug (No Analysis)|Any CPU.ActiveCfg = Debug (No Analysis)|Any CPU
+		{00F7BA18-BD4C-4035-A8B7-917630F01826}.Debug (No Analysis)|Any CPU.Build.0 = Debug (No Analysis)|Any CPU
+		{00F7BA18-BD4C-4035-A8B7-917630F01826}.Debug (Service)|Any CPU.ActiveCfg = Debug (Service)|Any CPU
+		{00F7BA18-BD4C-4035-A8B7-917630F01826}.Debug (Service)|Any CPU.Build.0 = Debug (Service)|Any CPU
+		{00F7BA18-BD4C-4035-A8B7-917630F01826}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00F7BA18-BD4C-4035-A8B7-917630F01826}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00F7BA18-BD4C-4035-A8B7-917630F01826}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00F7BA18-BD4C-4035-A8B7-917630F01826}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE4D1CAF-04DA-46AD-8C80-433F366BE084}.Debug (No Analysis)|Any CPU.ActiveCfg = Debug (No Analysis)|Any CPU
+		{BE4D1CAF-04DA-46AD-8C80-433F366BE084}.Debug (No Analysis)|Any CPU.Build.0 = Debug (No Analysis)|Any CPU
+		{BE4D1CAF-04DA-46AD-8C80-433F366BE084}.Debug (Service)|Any CPU.ActiveCfg = Debug (Service)|Any CPU
+		{BE4D1CAF-04DA-46AD-8C80-433F366BE084}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE4D1CAF-04DA-46AD-8C80-433F366BE084}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE4D1CAF-04DA-46AD-8C80-433F366BE084}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{199C0791-0A35-4C27-B96F-ED6BEC2F9D6D}.Debug (No Analysis)|Any CPU.ActiveCfg = Debug (No Analysis)|Any CPU
+		{199C0791-0A35-4C27-B96F-ED6BEC2F9D6D}.Debug (Service)|Any CPU.ActiveCfg = Debug (Service)|Any CPU
+		{199C0791-0A35-4C27-B96F-ED6BEC2F9D6D}.Debug (Service)|Any CPU.Build.0 = Debug (Service)|Any CPU
+		{199C0791-0A35-4C27-B96F-ED6BEC2F9D6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{199C0791-0A35-4C27-B96F-ED6BEC2F9D6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{199C0791-0A35-4C27-B96F-ED6BEC2F9D6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3320F160-D2FB-4D73-8DE0-90BA31F44010}.Debug (No Analysis)|Any CPU.ActiveCfg = Debug (No Analysis)|Any CPU
+		{3320F160-D2FB-4D73-8DE0-90BA31F44010}.Debug (No Analysis)|Any CPU.Build.0 = Debug (No Analysis)|Any CPU
+		{3320F160-D2FB-4D73-8DE0-90BA31F44010}.Debug (Service)|Any CPU.ActiveCfg = Debug (Service)|Any CPU
+		{3320F160-D2FB-4D73-8DE0-90BA31F44010}.Debug (Service)|Any CPU.Build.0 = Debug (Service)|Any CPU
+		{3320F160-D2FB-4D73-8DE0-90BA31F44010}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3320F160-D2FB-4D73-8DE0-90BA31F44010}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3320F160-D2FB-4D73-8DE0-90BA31F44010}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
