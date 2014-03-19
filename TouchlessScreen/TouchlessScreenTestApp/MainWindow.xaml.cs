@@ -1,22 +1,16 @@
-﻿//------------------------------------------------------------------------------
-// <copyright file="MainWindow.xaml.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
+﻿using Microsoft.Kinect;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using TouchlessScreenLibrary;
+
 
 namespace Microsoft.Samples.Kinect.DepthBasics
 {
-    using System;
-    using System.Globalization;
-    using System.IO;
-    using System.Windows;
-    using System.Windows.Media;
-    using System.Windows.Media.Imaging;
-    using Microsoft.Kinect;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Linq.Expressions;
-
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -88,10 +82,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// </summary>        
         private readonly Pen inferredBonePen = new Pen(Brushes.Gray, 1);
 
-        /// <summary>
-        /// Active Kinect sensor
-        /// </summary>
-        private KinectSensor sensor;
+        private TouchlessScreen touchlessScreen;
 
         /// <summary>
         /// Drawing group for skeleton rendering output
@@ -109,6 +100,8 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         public MainWindow()
         {
             InitializeComponent();
+
+            this.touchlessScreen = TouchlessScreen.Instance;
         }
 
         private bool[,] handPixels;
@@ -160,6 +153,8 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// <param name="e">event arguments</param>
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
+            this.touchlessScreen.Initialize();
+
             handPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
             // Create the drawing group we'll use for drawing
             this.drawingGroup = new DrawingGroup();
@@ -169,57 +164,27 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 
             // Display the drawing using our image control
             Image.Source = this.imageSource;
-            // Look through all sensors and start the first connected one.
-            // This requires that a Kinect is connected at the time of app startup.
-            // To make your app robust against plug/unplug, 
-            // it is recommended to use KinectSensorChooser provided in Microsoft.Kinect.Toolkit (See components in Toolkit Browser).
-            foreach (var potentialSensor in KinectSensor.KinectSensors)
+
+            // Allocate space to put the depth pixels we'll receive
+            this.depthPixels = new DepthImagePixel[this.touchlessScreen.Sensor.DepthStream.FramePixelDataLength];
+
+            // Allocate space to put the color pixels we'll create
+            this.colorPixels = new byte[this.touchlessScreen.Sensor.DepthStream.FramePixelDataLength * sizeof(int)];
+
+            // This is the bitmap we'll display on-screen
+            this.colorBitmap = new WriteableBitmap(this.touchlessScreen.Sensor.DepthStream.FrameWidth, this.touchlessScreen.Sensor.DepthStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);
+
+            // Set the image we display to point to the bitmap where we'll put the image data
+            this.Image.Source = this.colorBitmap;
+
+            // Add an event handler to be called whenever there is new color frame data
+            //this.sensor.SkeletonFrameReady += this.SensorSkeletonFrameReady;
+            this.touchlessScreen.Sensor.AllFramesReady += this.SensorDepthFrameReady;
+
+            if (!this.touchlessScreen.TryStart())
             {
-                if (potentialSensor.Status == KinectStatus.Connected)
-                {
-                    this.sensor = potentialSensor;
-                    break;
-                }
+                // TODO: Do some error handling here.
             }
-
-            if (null != this.sensor)
-            {
-                // Turn on the depth stream to receive depth frames
-                this.sensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
-
-                // Allocate space to put the depth pixels we'll receive
-                this.depthPixels = new DepthImagePixel[this.sensor.DepthStream.FramePixelDataLength];
-
-                // Allocate space to put the color pixels we'll create
-                this.colorPixels = new byte[this.sensor.DepthStream.FramePixelDataLength * sizeof(int)];
-
-                // This is the bitmap we'll display on-screen
-                this.colorBitmap = new WriteableBitmap(this.sensor.DepthStream.FrameWidth, this.sensor.DepthStream.FrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);
-
-                // Set the image we display to point to the bitmap where we'll put the image data
-                this.Image.Source = this.colorBitmap;
-
-                // Add an event handler to be called whenever there is new depth frame data
-                //this.sensor.DepthFrameReady += this.SensorDepthFrameReady;
-
-                this.sensor.SkeletonStream.EnableTrackingInNearRange = true; // enable returning skeletons while depth is in Near Range
-                this.sensor.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated; // Use seated tracking
-                this.sensor.SkeletonStream.Enable();
-
-                // Add an event handler to be called whenever there is new color frame data
-                //this.sensor.SkeletonFrameReady += this.SensorSkeletonFrameReady;
-                this.sensor.AllFramesReady += this.SensorDepthFrameReady;
-                // Start the sensor!
-                try
-                {
-                    this.sensor.Start();
-                }
-                catch (IOException)
-                {
-                    this.sensor = null;
-                }
-            }
-
  
         }
 
@@ -338,7 +303,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         {
             // Convert point to depth space.  
             // We are not using depth directly, but we do want the points in our 640x480 output resolution.
-            DepthImagePoint depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
+            DepthImagePoint depthPoint = touchlessScreen.Sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
             return new Point(depthPoint.X, depthPoint.Y);
         }
 
@@ -385,9 +350,9 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// <param name="e">event arguments</param>
         private void WindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (null != this.sensor)
+            if (null != this.touchlessScreen.Sensor)
             {
-                this.sensor.Stop();
+                this.touchlessScreen.Sensor.Stop();
             }
         }
 
@@ -402,10 +367,10 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             Skeleton skeleton = null;
             SkeletonPoint p;
             DepthImagePoint depthPoint = new DepthImagePoint();
-            /* try
+            try
              {
-                 //using (SkeletonFrame skeletonFrame = this.sensor.SkeletonStream.OpenNextFrame(20))
-                // {
+                using (SkeletonFrame skeletonFrame = this.touchlessScreen.Sensor.SkeletonStream.OpenNextFrame(20))
+                {
                     
                      if (skeleton_arr != null && skeleton_arr.Length > 0)
                      {
@@ -415,15 +380,15 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                      {
                          Joint wrist = skeleton.Joints[JointType.WristLeft];
                          p = wrist.Position;
-                         depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(p, DepthImageFormat.Resolution640x480Fps30);
+                         depthPoint = this.touchlessScreen.Sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(p, DepthImageFormat.Resolution640x480Fps30);
                      }
-                // }
+                 }
              }
              catch(InvalidOperationException)
              {
                  //Ignore error caused by using stream while the app is closing
                  return;
-             }*/
+             }
 
             skeletons = new Skeleton[0];
 
@@ -444,7 +409,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 {
                     Joint wrist = skeleton.Joints[JointType.HandLeft];
                     p = wrist.Position;
-                    depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(p, DepthImageFormat.Resolution640x480Fps30);
+                    depthPoint = this.touchlessScreen.Sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(p, DepthImageFormat.Resolution640x480Fps30);
                 }
             }
 
@@ -578,7 +543,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// <param name="e">event arguments</param>
         private void ButtonScreenshotClick(object sender, RoutedEventArgs e)
         {
-            if (null == this.sensor)
+            if (null == this.touchlessScreen.Sensor)
             {
                 
                 return;
@@ -617,26 +582,26 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// </summary>
         /// <param name="sender">object sending the event</param>
         /// <param name="e">event arguments</param>
-        private void CheckBoxNearModeChanged(object sender, RoutedEventArgs e)
-        {
-            if (this.sensor != null)
-            {
-                // will not function on non-Kinect for Windows devices
-                try
-                {
-                    if (this.checkBoxNearMode.IsChecked.GetValueOrDefault())
-                    {
-                        this.sensor.DepthStream.Range = DepthRange.Near;
-                    }
-                    else
-                    {
-                        this.sensor.DepthStream.Range = DepthRange.Default;
-                    }
-                }
-                catch (InvalidOperationException)
-                {
-                }
-            }
-        }
+        //private void CheckBoxNearModeChanged(object sender, RoutedEventArgs e)
+        //{
+        //    if (this.sensor != null)
+        //    {
+        //        // will not function on non-Kinect for Windows devices
+        //        try
+        //        {
+        //            if (this.checkBoxNearMode.IsChecked.GetValueOrDefault())
+        //            {
+        //                this.sensor.DepthStream.Range = DepthRange.Near;
+        //            }
+        //            else
+        //            {
+        //                this.sensor.DepthStream.Range = DepthRange.Default;
+        //            }
+        //        }
+        //        catch (InvalidOperationException)
+        //        {
+        //        }
+        //    }
+        //}
     }
 }
