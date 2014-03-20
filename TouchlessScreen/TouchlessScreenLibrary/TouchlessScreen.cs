@@ -43,31 +43,34 @@ namespace TouchlessScreenLibrary
 
         public void Initialize()
         {
-            // Look through all sensors and start the first connected one.
-            // This requires that a Kinect is connected at the time of app startup.
-            // To make your app robust against plug/unplug, 
-            // it is recommended to use KinectSensorChooser provided in Microsoft.Kinect.Toolkit (See components in Toolkit Browser).
-            foreach (var potentialSensor in KinectSensor.KinectSensors)
+            if (this.isInitalized)
             {
-                if (potentialSensor.Status == KinectStatus.Connected)
+                // Look through all sensors and start the first connected one.
+                // This requires that a Kinect is connected at the time of app startup.
+                // To make your app robust against plug/unplug, 
+                // it is recommended to use KinectSensorChooser provided in Microsoft.Kinect.Toolkit (See components in Toolkit Browser).
+                foreach (var potentialSensor in KinectSensor.KinectSensors)
                 {
-                    this.Sensor = potentialSensor;
-                    break;
+                    if (potentialSensor.Status == KinectStatus.Connected)
+                    {
+                        this.Sensor = potentialSensor;
+                        break;
+                    }
                 }
-            }
 
-            if (this.Sensor != null)
-            {
-                // Turn on the depth stream to receive depth frames
-                this.Sensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
+                if (this.Sensor != null)
+                {
+                    // Turn on the depth stream to receive depth frames
+                    this.Sensor.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
 
-                // Add an event handler to be called whenever there is new depth frame data
-                //this.Sensor.DepthFrameReady += this.SensorDepthFrameReady;
+                    // Add an event handler to be called whenever there is new depth frame data
+                    //this.Sensor.DepthFrameReady += this.SensorDepthFrameReady;
 
-                this.Sensor.DepthStream.Range = DepthRange.Near;
-                this.Sensor.SkeletonStream.EnableTrackingInNearRange = true; // enable returning skeletons while depth is in Near Range
-                this.Sensor.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated; // Use seated tracking
-                this.Sensor.SkeletonStream.Enable();
+                    this.Sensor.DepthStream.Range = DepthRange.Near;
+                    this.Sensor.SkeletonStream.EnableTrackingInNearRange = true; // enable returning skeletons while depth is in Near Range
+                    this.Sensor.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated; // Use seated tracking
+                    this.Sensor.SkeletonStream.Enable();
+                }
             }
 
             this.isInitalized = true;
