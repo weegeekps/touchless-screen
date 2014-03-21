@@ -13,6 +13,7 @@ namespace TouchlessScreenLibrary
         private static readonly Lazy<TouchlessScreen> lazy = new Lazy<TouchlessScreen>(() => new TouchlessScreen());
 
         private bool isInitalized;
+        private Skeleton[] skeletons;
 
         #region Private Ctors
         private TouchlessScreen()
@@ -41,10 +42,51 @@ namespace TouchlessScreenLibrary
         /// </summary>
         public KinectSensor Sensor { get; private set; }
 
+        public DepthImagePoint GetSkeletonDepthPoint(AllFramesReadyEventArgs eventArgs, JointType joint)
+        {
+            Skeleton[] skeleton_arr = this.skeletons;
+            Skeleton skeleton = null;
+            SkeletonPoint point;
+
+            this.skeletons = new Skeleton[0];
+
+            using (SkeletonFrame skeletonFrame = eventArgs.OpenSkeletonFrame())
+            {
+                if (skeletonFrame != null)
+                {
+                    skeletons = new Skeleton[skeletonFrame.SkeletonArrayLength];
+                    skeletonFrame.CopySkeletonDataTo(skeletons);
+                }
+
+                int len = skeletons.Length;
+
+                for (int i = 0; i < len; ++i)
+                {
+                    skeleton = skeletons[i];
+
+                    if (skeleton.TrackingState == SkeletonTrackingState.Tracked || skeleton.TrackingState == SkeletonTrackingState.PositionOnly)
+                    {
+                        break;
+                    }
+                }
+
+                if (skeleton != null)
+                {
+                    Joint wrist = skeleton.Joints[JointType.HandLeft];
+                    point = wrist.Position;
+                    return this.Sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(point, DepthImageFormat.Resolution640x480Fps30);
+                }
+            }
+
+            return new DepthImagePoint();
+        }
+
         public void Initialize()
         {
-            if (this.isInitalized)
+            if (!this.isInitalized)
             {
+                this.skeletons = new Skeleton[0];
+
                 // Look through all sensors and start the first connected one.
                 // This requires that a Kinect is connected at the time of app startup.
                 // To make your app robust against plug/unplug, 
