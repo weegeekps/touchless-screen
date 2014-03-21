@@ -44,11 +44,15 @@ namespace TouchlessScreenLibrary
 
         public DepthImagePoint GetSkeletonDepthPoint(AllFramesReadyEventArgs eventArgs, JointType joint)
         {
-            Skeleton[] skeleton_arr = this.skeletons;
             Skeleton skeleton = null;
             SkeletonPoint point;
 
             this.skeletons = new Skeleton[0];
+
+            if (eventArgs == EventArgs.Empty)
+            {
+                throw new InvalidOperationException("eventArgs can not be empty");
+            }
 
             using (SkeletonFrame skeletonFrame = eventArgs.OpenSkeletonFrame())
             {

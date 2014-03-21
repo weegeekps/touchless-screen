@@ -166,83 +166,90 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// <param name="e">event arguments</param>
         private void SensorDepthFrameReady(object sender, AllFramesReadyEventArgs e)
         {
-            DepthImagePoint depthPoint = this.touchlessScreen.GetSkeletonDepthPoint(e, JointType.HandLeft);
-
-            using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
+            try
             {
-                int minDepth;
-                int maxDepth;
-                int maxY, minY, maxX, minX;
+                DepthImagePoint depthPoint = this.touchlessScreen.GetSkeletonDepthPoint(e, JointType.HandLeft);
 
-                if (depthFrame != null)
+                using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
                 {
-                    // Copy the pixel data from the image to a temporary array
-                    depthFrame.CopyDepthImagePixelDataTo(this.depthPixels);
-                    if (depthPoint.Depth == 0)
+                    int minDepth;
+                    int maxDepth;
+                    int maxY, minY, maxX, minX;
+
+                    if (depthFrame != null)
                     {
-                        minDepth = depthFrame.MinDepth;
-                        maxDepth = depthFrame.MaxDepth;
-                        minX = 0;
-                        maxX = depthFrame.Width;
-                        minY = 0;
-                        maxY = depthFrame.Height;
+                        // Copy the pixel data from the image to a temporary array
+                        depthFrame.CopyDepthImagePixelDataTo(this.depthPixels);
+                        if (depthPoint.Depth == 0)
+                        {
+                            minDepth = depthFrame.MinDepth;
+                            maxDepth = depthFrame.MaxDepth;
+                            minX = 0;
+                            maxX = depthFrame.Width;
+                            minY = 0;
+                            maxY = depthFrame.Height;
+                        }
+                        else
+                        {
+                            // Get the min and max reliable depth for the current frame
+                            minDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 40);
+                            maxDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 40);
+                            minX = Math.Max(0, depthPoint.X - 70);
+                            maxX = Math.Min(depthFrame.Height, depthPoint.X + 70);
+                            minY = Math.Max(0, depthPoint.Y - 70);
+                            maxY = Math.Min(depthFrame.Height, depthPoint.Y + 90);
+                        }
+                        // Convert the depth to RGB
+                        int colorPixelIndex = 0;
+
+                        for (int i = 0; i < this.depthPixels.Length; ++i)
+                        {
+                            // Get the depth for this pixel
+                            short depth = depthPixels[i].Depth;
+                            int x = i % 640;
+                            int y = i / 640;
+                            // To convert to a byte, we're discarding the most-significant
+                            // rather than least-significant bits.
+                            // We're preserving detail, although the intensity will "wrap."
+                            // Values outside the reliable depth range are mapped to 0 (black).
+
+                            // Note: Using conditionals in this loop could degrade performance.
+                            // Consider using a lookup table instead when writing production code.
+                            // See the KinectDepthViewer class used by the KinectExplorer sample
+                            // for a lookup table example.
+                            byte intensity = (byte)(depth >= minDepth && depth <= maxDepth && y > minY && y < maxY && x > minX && x < maxX ? depth : 0);
+                            handPixels[x, y] = intensity != 0;
+                            // Write out blue byte
+                            this.colorPixels[colorPixelIndex++] = intensity;
+
+                            // Write out green byte
+                            this.colorPixels[colorPixelIndex++] = intensity;
+
+                            // Write out red byte                        
+                            this.colorPixels[colorPixelIndex++] = intensity;
+
+                            // We're outputting BGR, the last byte in the 32 bits is unused so skip it
+                            // If we were outputting BGRA, we would write alpha here.
+                            ++colorPixelIndex;
+                        }
+                        if (depthPoint.Depth != 0) findInteriorAndContour();
+                        // Write the pixel data into our bitmap
+                        this.colorBitmap.WritePixels(
+                            new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
+                            this.colorPixels,
+                            this.colorBitmap.PixelWidth * sizeof(int),
+                            0);
+                        /*                  this.colorBitmap.WritePixels(
+                          new Int32Rect(minX, minY, maxX, maxY),
+                          this.colorPixels,
+                          (maxX-minX) * sizeof(int),
+                          minX); */
                     }
-                    else
-                    {
-                        // Get the min and max reliable depth for the current frame
-                        minDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 40);
-                        maxDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 40);
-                        minX = Math.Max(0, depthPoint.X - 70);
-                        maxX = Math.Min(depthFrame.Height, depthPoint.X + 70);
-                        minY = Math.Max(0, depthPoint.Y - 70);
-                        maxY = Math.Min(depthFrame.Height, depthPoint.Y + 90);
-                    }
-                    // Convert the depth to RGB
-                    int colorPixelIndex = 0;
-
-                    for (int i = 0; i < this.depthPixels.Length; ++i)
-                    {
-                        // Get the depth for this pixel
-                        short depth = depthPixels[i].Depth;
-                        int x = i % 640;
-                        int y = i / 640;
-                        // To convert to a byte, we're discarding the most-significant
-                        // rather than least-significant bits.
-                        // We're preserving detail, although the intensity will "wrap."
-                        // Values outside the reliable depth range are mapped to 0 (black).
-
-                        // Note: Using conditionals in this loop could degrade performance.
-                        // Consider using a lookup table instead when writing production code.
-                        // See the KinectDepthViewer class used by the KinectExplorer sample
-                        // for a lookup table example.
-                        byte intensity = (byte)(depth >= minDepth && depth <= maxDepth && y > minY && y < maxY && x > minX && x < maxX ? depth : 0);
-                        handPixels[x, y] = intensity != 0;
-                        // Write out blue byte
-                        this.colorPixels[colorPixelIndex++] = intensity;
-
-                        // Write out green byte
-                        this.colorPixels[colorPixelIndex++] = intensity;
-
-                        // Write out red byte                        
-                        this.colorPixels[colorPixelIndex++] = intensity;
-
-                        // We're outputting BGR, the last byte in the 32 bits is unused so skip it
-                        // If we were outputting BGRA, we would write alpha here.
-                        ++colorPixelIndex;
-                    }
-                    if (depthPoint.Depth != 0) findInteriorAndContour();
-                    // Write the pixel data into our bitmap
-                    this.colorBitmap.WritePixels(
-                        new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
-                        this.colorPixels,
-                        this.colorBitmap.PixelWidth * sizeof(int),
-                        0);
-                    /*                  this.colorBitmap.WritePixels(
-                      new Int32Rect(minX, minY, maxX, maxY),
-                      this.colorPixels,
-                      (maxX-minX) * sizeof(int),
-                      minX); */
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
             }
         }
 
