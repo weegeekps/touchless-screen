@@ -92,7 +92,6 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// Drawing image that we will display
         /// </summary>
         private DrawingImage imageSource;
-
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
         /// </summary>
@@ -104,7 +103,8 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         }
 
         private bool[,] handPixels;
-
+        private bool[,] fingerPixels;
+        private bool[,] contourPixels;
         /// <summary>
         /// Execute startup tasks
         /// </summary>
@@ -115,6 +115,8 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             this.touchlessScreen.Initialize();
 
             handPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
+            fingerPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
+            contourPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
             // Create the drawing group we'll use for drawing
             this.drawingGroup = new DrawingGroup();
 
@@ -174,7 +176,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 {
                     int minDepth;
                     int maxDepth;
-                    int maxY, minY, maxX, minX;
+                    int maxY, minY, maxX, minX, centerX = 0, centerY = 0;
 
                     if (depthFrame != null)
                     {
@@ -194,10 +196,12 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                             // Get the min and max reliable depth for the current frame
                             minDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 40);
                             maxDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 40);
-                            minX = Math.Max(0, depthPoint.X - 70);
-                            maxX = Math.Min(depthFrame.Height, depthPoint.X + 70);
-                            minY = Math.Max(0, depthPoint.Y - 70);
-                            maxY = Math.Min(depthFrame.Height, depthPoint.Y + 90);
+                            centerX = depthPoint.X;
+                            centerY = depthPoint.Y;
+                            minX = Math.Max(0, centerX - 70);
+                            maxX = Math.Min(depthFrame.Height, centerX + 70);
+                            minY = Math.Max(0, centerY - 70);
+                            maxY = Math.Min(depthFrame.Height, centerY + 90);
                         }
                         // Convert the depth to RGB
                         int colorPixelIndex = 0;
@@ -208,6 +212,10 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                             short depth = depthPixels[i].Depth;
                             int x = i % 640;
                             int y = i / 640;
+
+                            byte intensity = (byte)(depth >= minDepth && depth <= maxDepth && y > minY && y < maxY && x > minX && x < maxX ? depth : 0);
+                            handPixels[x, y] = intensity != 0;
+
                             // To convert to a byte, we're discarding the most-significant
                             // rather than least-significant bits.
                             // We're preserving detail, although the intensity will "wrap."
@@ -217,22 +225,58 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                             // Consider using a lookup table instead when writing production code.
                             // See the KinectDepthViewer class used by the KinectExplorer sample
                             // for a lookup table example.
+                        }
+                        if (depthPoint.Depth != 0)
+                        {
+                            //List<Tuple<int, int, int>> convexHull = ConvexHullCreator.CreateHull(points);
+                            List<Tuple<int, int>> contour = new List<Tuple<int, int>>();
+                            List<Tuple<int, int>> interior = new List<Tuple<int, int>>();
+                            contourPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
+                            fingerPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
+                            findInteriorAndContour();
+                            List<Tuple<int, int>> filtered_contour = (new ContourCreator(contourPixels)).findContour();
+                            //we could probably play around with these parameters alot
+                            FingerFinder.findFingers(filtered_contour, 22, 020.0, centerX, centerY).ForEach(i => { fingerPixels[i.Item1, i.Item2] = true; });
+                        }
+                        for (int i = 0; i < this.depthPixels.Length; ++i)
+                        {
+                            short depth = depthPixels[i].Depth;
+                            int x = i % 640;
+                            int y = i / 640;
                             byte intensity = (byte)(depth >= minDepth && depth <= maxDepth && y > minY && y < maxY && x > minX && x < maxX ? depth : 0);
-                            handPixels[x, y] = intensity != 0;
-                            // Write out blue byte
-                            this.colorPixels[colorPixelIndex++] = intensity;
+                            if (depthPoint.Depth == 0)
+                            {
+                                // Write out blue byte
+                                this.colorPixels[colorPixelIndex++] = intensity;
 
-                            // Write out green byte
-                            this.colorPixels[colorPixelIndex++] = intensity;
+                                // Write out green byte
+                                this.colorPixels[colorPixelIndex++] = intensity;
 
-                            // Write out red byte                        
-                            this.colorPixels[colorPixelIndex++] = intensity;
-
+                                // Write out red byte                        
+                                this.colorPixels[colorPixelIndex++] = intensity;
+                            }
+                            else if (fingerPixels[x, y])
+                            {
+                                this.colorPixels[colorPixelIndex++] = 0;
+                                this.colorPixels[colorPixelIndex++] = 0;
+                                this.colorPixels[colorPixelIndex++] = 255;
+                            }
+                            else if( contourPixels[x,y]) 
+                            {
+                                this.colorPixels[colorPixelIndex++] = 255;
+                                this.colorPixels[colorPixelIndex++] = 0;                   
+                                this.colorPixels[colorPixelIndex++] = 0;
+                            }
+                            else
+                            {
+                                this.colorPixels[colorPixelIndex++] = 0;
+                                this.colorPixels[colorPixelIndex++] = 0;
+                                this.colorPixels[colorPixelIndex++] = 0;
+                            }
                             // We're outputting BGR, the last byte in the 32 bits is unused so skip it
                             // If we were outputting BGRA, we would write alpha here.
                             ++colorPixelIndex;
                         }
-                        if (depthPoint.Depth != 0) findInteriorAndContour();
                         // Write the pixel data into our bitmap
                         this.colorBitmap.WritePixels(
                             new Int32Rect(0, 0, this.colorBitmap.PixelWidth, this.colorBitmap.PixelHeight),
@@ -259,8 +303,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         public void findInteriorAndContour()
         {
             List<Tuple<int, int>> points = new List<Tuple<int, int>>();
-            List<Tuple<int, int>> contour = new List<Tuple<int, int>>();
-            List<Tuple<int, int>> interior = new List<Tuple<int, int>>();
+
             int x, y;
             for (int i = 0; i < IMG_WIDTH; ++i)
             {
@@ -277,7 +320,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 y = point.Item2;
                 if (x == 0 || y == 0 || x == IMG_WIDTH - 1 || y == IMG_HEIGHT - 1) //add end of range pixels to contour
                 {
-                    contour.Add(point);
+                    
                 }
                 else
                 {
@@ -291,8 +334,15 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     if (handPixels[x - 1, y - 1]) ++conections;
                     if (handPixels[x + 1, y - 1]) ++conections;
                     if (handPixels[x - 1, y + 1]) ++conections;
-                    if (conections >= 7) interior.Add(point);
-                    else contour.Add(point);
+                    if (conections == 8)
+                    {
+
+                    }
+                    else
+                    {
+
+                        contourPixels[x, y] = true;
+                    }
                 }
             }
 
