@@ -76,7 +76,7 @@ namespace TouchlessScreenLibrary
 
                 if (skeleton != null)
                 {
-                    Joint wrist = skeleton.Joints[JointType.HandLeft];
+                    Joint wrist = skeleton.Joints[joint];
                     point = wrist.Position;
                     return this.Sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(point, DepthImageFormat.Resolution640x480Fps30);
                 }
