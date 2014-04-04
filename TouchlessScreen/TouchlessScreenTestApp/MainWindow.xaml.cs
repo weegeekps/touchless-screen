@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using TouchlessScreenLibrary;
+using TouchlessScreenTestApp;
 
 
 namespace Microsoft.Samples.Kinect.DepthBasics
@@ -145,7 +146,6 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             {
                 // TODO: Do some error handling here.
             }
- 
         }
 
         /// <summary>
@@ -194,13 +194,13 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                         else
                         {
                             // Get the min and max reliable depth for the current frame
-                            minDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 40);
-                            maxDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 40);
+                            minDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 50);
+                            maxDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 50);
                             centerX = depthPoint.X;
                             centerY = depthPoint.Y;
-                            minX = Math.Max(0, centerX - 70);
-                            maxX = Math.Min(depthFrame.Height, centerX + 70);
-                            minY = Math.Max(0, centerY - 70);
+                            minX = Math.Max(0, centerX - 90);
+                            maxX = Math.Min(depthFrame.Height, centerX + 90);
+                            minY = Math.Max(0, centerY - 110);
                             maxY = Math.Min(depthFrame.Height, centerY + 90);
                         }
                         // Convert the depth to RGB
@@ -210,8 +210,8 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                         {
                             // Get the depth for this pixel
                             short depth = depthPixels[i].Depth;
-                            int x = i % 640;
-                            int y = i / 640;
+                            int x = i % IMG_WIDTH;
+                            int y = i / IMG_WIDTH;
 
                             byte intensity = (byte)(depth >= minDepth && depth <= maxDepth && y > minY && y < maxY && x > minX && x < maxX ? depth : 0);
                             handPixels[x, y] = intensity != 0;
@@ -233,10 +233,14 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                             List<Tuple<int, int>> interior = new List<Tuple<int, int>>();
                             contourPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
                             fingerPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
-                            findInteriorAndContour();
+                            findInteriorAndContour(interior);
                             List<Tuple<int, int>> filtered_contour = (new ContourCreator(contourPixels)).findContour();
                             //we could probably play around with these parameters alot
-                            FingerFinder.findFingers(filtered_contour, 22, 020.0, centerX, centerY).ForEach(i => { fingerPixels[i.Item1, i.Item2] = true; });
+                            Tuple<int, int> center = FingerFinder.findPalmCenter(interior, contour);
+                            FingerFinder.reduceFingerPoints(FingerFinder.findFingers(filtered_contour,30, 1.7, center.Item1, center.Item2)).ForEach(i => 
+                            { 
+                                fingerPixels[i.Item1, i.Item2] = true; 
+                            });
                         }
                         for (int i = 0; i < this.depthPixels.Length; ++i)
                         {
@@ -300,7 +304,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// <summary>
         /// Seperates the hand pixels into interior pixels and contour pixels
         /// </summary>
-        public void findInteriorAndContour()
+        public void findInteriorAndContour(List<Tuple<int,int>> interior)
         {
             List<Tuple<int, int>> points = new List<Tuple<int, int>>();
 
@@ -336,7 +340,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     if (handPixels[x - 1, y + 1]) ++conections;
                     if (conections == 8)
                     {
-
+                        interior.Add(new Tuple<int, int>(x, y));
                     }
                     else
                     {
