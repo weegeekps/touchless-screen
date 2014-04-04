@@ -211,9 +211,6 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                             maxX = Math.Min(depthFrame.Height, centerX - 20);
                             minY = Math.Max(0, centerY-10);
                             maxY = Math.Min(depthFrame.Height, centerY + 10);
-                            //EyePosition(eyeImage, depthPoint);
-                            //Canvas.SetTop(eyeImage, depthPoint.Y);
-                            //Canvas.SetLeft(eyeImage, depthPoint.X);
                         }
                         // Convert the depth to RGB
                         int colorPixelIndex = 0;

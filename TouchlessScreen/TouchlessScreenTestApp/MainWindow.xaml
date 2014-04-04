@@ -92,6 +92,5 @@
                 <TextBlock Name="statusBarText" Margin="-1 0 0 0">Press 'Screenshot' to save a screenshot to your 'My Pictures' directory.</TextBlock>
             </StatusBarItem>
         </StatusBar>
-        <Ellipse x:Name="eyeImage" Fill="Red" HorizontalAlignment="Left" Height="12" Margin="10,26,0,0" Stroke="Red" VerticalAlignment="Top" Width="10"/>
     </Grid>
 </Window>
