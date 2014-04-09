@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="ContourCreator.cs" />
     <Compile Include="FingerFinder.cs" />
+    <Compile Include="PointData.cs" />
     <Compile Include="TouchlessScreen.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
