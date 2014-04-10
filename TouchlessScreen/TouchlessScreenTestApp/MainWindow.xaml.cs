@@ -148,7 +148,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             {
                 // TODO: Do some error handling here.
             }
- 
+
         }
 
         /// <summary>
@@ -173,25 +173,23 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         {
             try
             {
-                DepthImagePoint depthPointHead = this.touchlessScreen.GetSkeletonDepthPoint(e, JointType.Head);
-                DepthImagePoint depthPoint = this.touchlessScreen.GetSkeletonDepthPoint(e, JointType.HandLeft);
+                DepthImagePoint depthPoint = this.touchlessScreen.GetSkeletonDepthPoint(e, JointType.Head);
+                //DepthImagePoint depthPoint = this.touchlessScreen.GetSkeletonDepthPoint(e, JointType.HandLeft);
 
                 using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
                 {
                     int minDepth;
                     int maxDepth;
-                    int minHeadDepth;
-                    int maxHeadDepth;
                     int maxY, minY, maxX, minX, centerX = 0, centerY = 0;
-                    int maxHeadY, minHeadY, maxHeadX, minHeadX, centerHeadX = 0, centerHeadY = 0;
+                    //int maxHeadY, minHeadY, maxHeadX, minHeadX, centerHeadX = 0, centerHeadY = 0;
 
 
                     if (depthFrame != null)
                     {
                         // Copy the pixel data from the image to a temporary array
                         depthFrame.CopyDepthImagePixelDataTo(this.depthPixels);
-                        
-                        if (depthPoint.Depth== 0)
+
+                        if (depthPoint.Depth == 0)
                         {
                             minDepth = depthFrame.MinDepth;
                             maxDepth = depthFrame.MaxDepth;
@@ -202,36 +200,20 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                         }
                         else
                         {
-                             //Get the min and max reliable depth for the current frame
-                            minDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 40);
-                            maxDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 40);
+                            //Get the min and max reliable depth for the current frame
+                            minDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 160);
+                            maxDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 160);
+                            //minDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 40);
+                            //maxDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 40);
                             centerX = depthPoint.X;
                             centerY = depthPoint.Y;
-                            minX = Math.Max(0, centerX - 70);
-                            maxX = Math.Min(depthFrame.Height, centerX - 70);
-                            minY = Math.Max(0, centerY-70);
-                            maxY = Math.Min(depthFrame.Height, centerY + 90);
-                        }
-                        if (depthPointHead.Depth == 0)
-                        {
-                            minHeadDepth = depthFrame.MinDepth;
-                            maxHeadDepth = depthFrame.MaxDepth;
-                            minHeadX = 0;
-                            maxHeadX = depthFrame.Width;
-                            minHeadY = 0;
-                            maxHeadY = depthFrame.Height;
-                        }
-                        else
-                        {
-                            //Get the min and max reliable depth for the current frame
-                            minHeadDepth = Math.Max(depthFrame.MinDepth, depthPoint.Depth - 160);
-                            maxHeadDepth = Math.Min(depthFrame.MaxDepth, depthPoint.Depth + 160);
-                            centerHeadX = depthPoint.X;
-                            centerHeadY = depthPoint.Y;
-                            minHeadX = Math.Max(0, centerHeadX - 40);
-                            maxHeadX = Math.Min(depthFrame.Height, centerHeadX - 20);
-                            minHeadY = Math.Max(0, centerHeadY - 10);
-                            maxHeadY = Math.Min(depthFrame.Height, centerHeadY + 10);
+                            minX = Math.Max(0, centerX - 40);
+                            maxX = Math.Min(depthFrame.Height, centerX - 20);
+                            minY = Math.Max(0, centerY - 10);
+                            maxY = Math.Min(depthFrame.Height, centerY + 10);
+                            //EyePosition(eyeImage, depthPoint);
+                            //Canvas.SetTop(eyeImage, depthPoint.Y);
+                            //Canvas.SetLeft(eyeImage, depthPoint.X);
                         }
                         // Convert the depth to RGB
                         int colorPixelIndex = 0;
@@ -291,10 +273,10 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                                 this.colorPixels[colorPixelIndex++] = 0;
                                 this.colorPixels[colorPixelIndex++] = 255;
                             }
-                            else if( contourPixels[x,y]) 
+                            else if (contourPixels[x, y])
                             {
                                 this.colorPixels[colorPixelIndex++] = 255;
-                                this.colorPixels[colorPixelIndex++] = 0;                   
+                                this.colorPixels[colorPixelIndex++] = 0;
                                 this.colorPixels[colorPixelIndex++] = 0;
                             }
                             else
@@ -332,8 +314,8 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         ///</summary>
         //public void EyePosition(FrameworkElement element, DepthImagePoint point)
         //{
-            //Canvas.SetLeft(element, point.X - element.Width / 2);
-            //Canvas.SetTop(element, point.Y - element.Height / 2);
+        //Canvas.SetLeft(element, point.X - element.Width / 2);
+        //Canvas.SetTop(element, point.Y - element.Height / 2);
         //}
 
         /// <summary>
@@ -359,7 +341,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 y = point.Item2;
                 if (x == 0 || y == 0 || x == IMG_WIDTH - 1 || y == IMG_HEIGHT - 1) //add end of range pixels to contour
                 {
-                    
+
                 }
                 else
                 {
@@ -396,7 +378,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         {
             if (null == this.touchlessScreen.Sensor)
             {
-                
+
                 return;
             }
 
