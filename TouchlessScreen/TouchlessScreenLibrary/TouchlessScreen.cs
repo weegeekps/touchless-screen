@@ -60,6 +60,19 @@ namespace TouchlessScreenLibrary
         #endregion
 
         #region Private Methods & Properties
+        private Point3d<int> CalculateVector(DepthImagePoint a, DepthImagePoint b)
+        {
+            int x = b.X - a.X;
+            int y = b.Y - a.Y;
+            int z = b.Depth - a.Depth;
+
+            return new Point3d<int>
+            {
+                X = x,
+                Y = y,
+                Z = z,
+            };
+        }
         #endregion
 
         #region Public Methods & Properties
@@ -159,6 +172,10 @@ namespace TouchlessScreenLibrary
             {
                 this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
                 this.headPoint = GetSkeletonDepthPoint(e, JointType.Head);
+
+                Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
+                //System.Diagnostics.Debug.WriteLine(pointerRay);
+
                 using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
                 {
                     int minDepth;
@@ -224,7 +241,8 @@ namespace TouchlessScreenLibrary
                             List<Tuple<int, int>> filtered_contour = (new ContourCreator(contourPixels)).findContour();
                             //we could probably play around with these parameters alot
                             Tuple<int, int> center = FingerFinder.findPalmCenter(interior, contour);
-                            FingerFinder.reduceFingerPoints(FingerFinder.findFingers(filtered_contour, 30, 1.7, center.Item1, center.Item2)).ForEach(i =>
+                            List<Tuple<int, int>> fingerPoints = FingerFinder.reduceFingerPoints(FingerFinder.findFingers(filtered_contour, 30, 1.7, center.Item1, center.Item2));
+                            fingerPoints.ForEach(i =>
                             {
                                 fingerPixels[i.Item1, i.Item2] = true;
                             });
