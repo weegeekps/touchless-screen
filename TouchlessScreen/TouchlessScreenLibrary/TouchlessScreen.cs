@@ -26,6 +26,10 @@ namespace TouchlessScreenLibrary
         public const float RenderHeight = 480.0f;
         public const int IMG_HEIGHT = (int)RenderHeight;
 
+        private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(180, 220, 0);
+        private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(325, 250, 0);
+        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(430, 320, 0);
+
         private bool[,] handPixels;
         private bool[,] fingerPixels;
         private bool[,] contourPixels;
@@ -46,6 +50,7 @@ namespace TouchlessScreenLibrary
         private TouchlessScreen()
         {
             this.isInitalized = false;
+            this.intensityValues = new byte[0];
         }
         #endregion
 
@@ -60,17 +65,85 @@ namespace TouchlessScreenLibrary
         #endregion
 
         #region Private Methods & Properties
-        private Point3d<int> CalculateVector(DepthImagePoint a, DepthImagePoint b)
+        private Point3d<int> CalculateVector(Point3d<int> a, Point3d<int> b)
         {
             int x = b.X - a.X;
             int y = b.Y - a.Y;
-            int z = b.Depth - a.Depth;
+            int z = b.Z - a.Z;
 
             return new Point3d<int>
             {
                 X = x,
                 Y = y,
                 Z = z,
+            };
+        }
+
+        private Point3d<int> CalculateVector(DepthImagePoint a, DepthImagePoint b)
+        {
+            return this.CalculateVector(this.ConvertDepthImagePointToPoint3d(a), this.ConvertDepthImagePointToPoint3d(b));
+        }
+
+        private Point3d<int> CalculateNormalVector(Point3d<int> a, Point3d<int> b, Point3d<int> c)
+        {
+            int normalX;
+            int normalY;
+            int normalZ;
+
+            Point3d<int> ab = this.CalculateVector(b, a);  // A - B
+            Point3d<int> bc = this.CalculateVector(c, b);  // B - C
+
+            normalX = (ab.Y * bc.Z) - (bc.Y * ab.Z);
+            normalY = (ab.Z * bc.X) - (bc.Z * ab.X);
+            normalZ = (ab.X * bc.Y) - (bc.X * ab.Y);
+
+            return new Point3d<int>
+            {
+                X = normalX,
+                Y = normalY,
+                Z = normalZ,
+            };
+        }
+
+        private Point2d<int> MapRealspacePointToScreen(Point3d<int> origin, Point3d<int> direction, Point3d<int> normalVector)
+        {
+            int x;
+            int y;
+            int t;
+
+            if (origin.Equals(new Point3d<int>(0, 0, 0)) || direction.Equals(new Point3d<int>(0, 0, 0)))
+            {
+                return new Point2d<int>(0, 0);
+            }
+
+            if (normalVector.X != 0 && normalVector.Y != 0)
+            {
+                // For the screen plane, the normal vector *should* have X and Y values which are 0.
+                //   If it doesn't, then the algorithm below won't work.
+                throw new InvalidDataException("Normal Vector X or Y is non-zero.");
+            }
+
+            t = -(origin.Z / direction.Z);
+
+            x = origin.X + (direction.X * t);
+            y = origin.Y + (direction.Y * t);
+
+            // THIS ISN'T DONE YET.
+            // TODO: ACTUALLY GET MapRealspacePointToScreen working correctly!
+            return new Point2d<int>
+            {
+                X = x,
+                Y = y,
+            };
+        }
+
+        private Point3d<int> ConvertDepthImagePointToPoint3d(DepthImagePoint depthPoint)
+        {
+            return new Point3d<int>
+            {
+                X = depthPoint.X,
+                Y = depthPoint.Y,
+                Z = depthPoint.Depth,
             };
         }
         #endregion
@@ -173,8 +246,20 @@ namespace TouchlessScreenLibrary
                 this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
                 this.headPoint = GetSkeletonDepthPoint(e, JointType.Head);
 
-                Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
+                //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
+                //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
                 //System.Diagnostics.Debug.WriteLine(pointerRay);
+                //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString() + " && " + this.ConvertDepthImagePointToPoint3d(this.headPoint).ToString());
+
+                // *** POINTER CODE, SHOULD BE MOVED TO OWN METHOD WHEN DONE ***
+                Point3d<int> ptHandPoint = this.ConvertDepthImagePointToPoint3d(this.handPoint);
+                Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
+
+                Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
+                Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
+
+                System.Diagnostics.Debug.WriteLine(screenPos.ToString());
+                // *** END POINTER CODE
 
                 using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
                 {
@@ -268,6 +353,12 @@ namespace TouchlessScreenLibrary
                 int y = i / 640;
                 if (handPoint.Depth == 0)
                 {
+                    if (this.intensityValues.Length < 1)
+                    {
+                        System.Diagnostics.Debug.WriteLine("WARN: Intensity Values length was less than 0.");
+                        return;
+                    }
+
                     byte intensity = intensityValues[i];
                     // Write out blue byte
                     colorPixels[colorPixelIndex++] = intensity;

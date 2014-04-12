@@ -101,7 +101,6 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         {
             this.touchlessScreen.Initialize();
 
-
             // Create the drawing group we'll use for drawing
             this.drawingGroup = new DrawingGroup();
 
@@ -110,8 +109,6 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 
             // Display the drawing using our image control
             Image.Source = this.imageSource;
-
-
 
             // Allocate space to put the color pixels we'll create
             this.colorPixels = new byte[this.touchlessScreen.Sensor.DepthStream.FramePixelDataLength * sizeof(int)];
@@ -154,8 +151,6 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             this.touchlessScreen.HandleSensorEvent(sender, e);
             this.touchlessScreen.DrawBitmap(this.colorBitmap, this.colorPixels);
         }
-
-
 
         /// <summary>
         /// Handles the user clicking on the screenshot button
