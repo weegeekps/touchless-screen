@@ -246,6 +246,7 @@ namespace TouchlessScreenLibrary
                 this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
                 this.headPoint = GetSkeletonDepthPoint(e, JointType.Head);
 
+
                 //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
                 //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
                 //System.Diagnostics.Debug.WriteLine(pointerRay);
@@ -266,6 +267,7 @@ namespace TouchlessScreenLibrary
                     int minDepth;
                     int maxDepth;
                     int maxY, minY, maxX, minX, centerX = 0, centerY = 0;
+                    int threshold;
 
                     if (depthFrame != null)
                     {
@@ -291,7 +293,12 @@ namespace TouchlessScreenLibrary
                             maxX = Math.Min(depthFrame.Height, centerX + 90);
                             minY = Math.Max(0, centerY - 110);
                             maxY = Math.Min(depthFrame.Height, centerY + 90);
+                            
                         }
+
+                        threshold = headPoint.Depth - handPoint.Depth;
+                        if (threshold > 500)
+
 
                         intensityValues = new byte[this.depthPixels.Length];
                         for (int i = 0; i < this.depthPixels.Length; ++i)
