@@ -36,6 +36,10 @@ namespace TouchlessScreenLibrary
         private byte[] intensityValues;
         public DepthImagePoint handPoint;
         public DepthImagePoint headPoint;
+        public DepthImagePoint shoulderPoint;
+        public DepthImagePoint elbowPoint;
+        public DepthImagePoint wristPoint;
+        public int threshold;
         private static readonly Lazy<TouchlessScreen> lazy = new Lazy<TouchlessScreen>(() => new TouchlessScreen());
 
         private bool isInitalized;
@@ -238,13 +242,44 @@ namespace TouchlessScreenLibrary
 
             this.isInitalized = true;
         }
-
+ 
         public void HandleSensorEvent(object sender, AllFramesReadyEventArgs e)
         {
+            
             try
             {
                 this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
                 this.headPoint = GetSkeletonDepthPoint(e, JointType.Head);
+                this.shoulderPoint = GetSkeletonDepthPoint(e, JointType.ShoulderLeft);
+                this.elbowPoint = GetSkeletonDepthPoint(e, JointType.ElbowLeft);
+                this.wristPoint = GetSkeletonDepthPoint(e, JointType.WristLeft);
+
+                double lenPartOne;
+                double lenPartTwo;
+                double lenPartThree;
+                double armLength;
+
+                //get arm length to determine threshold
+                lenPartOne = Math.Sqrt(Math.Pow(shoulderPoint.X - elbowPoint.X,2) + Math.Pow(shoulderPoint.Y - elbowPoint.Y,2) + Math.Pow(shoulderPoint.Depth - elbowPoint.Depth,2));
+                lenPartTwo = Math.Sqrt(Math.Pow(elbowPoint.X - wristPoint.X, 2) + Math.Pow(elbowPoint.Y - wristPoint.Y, 2) + Math.Pow(elbowPoint.Depth - wristPoint.Depth, 2));
+                lenPartThree = Math.Sqrt(Math.Pow(wristPoint.X - handPoint.X, 2) + Math.Pow(wristPoint.Y - handPoint.Y, 2) + Math.Pow(wristPoint.Depth - handPoint.Depth, 2));
+                armLength = lenPartOne + lenPartTwo + lenPartThree;
+
+                //set click zone threshold as 25mm less than arm length
+                //may need to move to own method
+                threshold = Convert.ToInt32(armLength) - 25;
+
+                //enter click zone threshold
+                if (shoulderPoint.Depth - handPoint.Depth > threshold)
+                { 
+                    //if single tracked finger; single click
+                    //if two tracked fingers; right click
+                    //if single tracked finger twice; double click
+                    //if two tracked fingers twice; enter scroll lock
+                }
+
+                
+
 
                 //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
                 //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
@@ -261,11 +296,14 @@ namespace TouchlessScreenLibrary
                 System.Diagnostics.Debug.WriteLine(screenPos.ToString());
                 // *** END POINTER CODE
 
+                
+
                 using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
                 {
                     int minDepth;
                     int maxDepth;
                     int maxY, minY, maxX, minX, centerX = 0, centerY = 0;
+                    //int threshold;
 
                     if (depthFrame != null)
                     {
