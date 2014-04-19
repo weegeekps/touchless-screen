@@ -139,6 +139,8 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             {
                 this.touchlessScreen.Sensor.Stop();
             }
+
+            this.touchlessScreen.Dispose();
         }
 
         /// <summary>

@@ -9,11 +9,12 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using VMultiDllWrapper;
 
 namespace TouchlessScreenLibrary
 {
 
-    public class TouchlessScreen
+    public class TouchlessScreen : IDisposable
     {
         /// <summary>
         /// Width of output drawing
@@ -44,6 +45,7 @@ namespace TouchlessScreenLibrary
 
         private bool isInitalized;
         private Skeleton[] skeletons;
+        private VMulti vMulti;
 
         /// <summary>
         /// Intermediate storage for the depth data received from the camera
@@ -150,6 +152,12 @@ namespace TouchlessScreenLibrary
                 Z = depthPoint.Depth,
             };
         }
+
+        private void UpdateMultiTouch(Point2d<int> position)
+        {
+            // TODO: Flesh out UpdateMultiTouch.
+            throw new NotImplementedException();
+        }
         #endregion
 
         #region Public Methods & Properties
@@ -206,6 +214,15 @@ namespace TouchlessScreenLibrary
         {
             if (!this.isInitalized)
             {
+                // VMulti Init
+                this.vMulti = new VMulti();
+
+                if (!this.vMulti.connect())
+                {
+                    throw new Exception("Failed to connect to VMulti.");
+                }
+
+                // Kinect Init
                 this.skeletons = new Skeleton[0];
                 handPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
                 fingerPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
@@ -512,5 +529,14 @@ namespace TouchlessScreenLibrary
             }
         }
         #endregion
+
+        public void Dispose()
+        {
+            if (this.isInitalized)
+            {
+                this.vMulti.disconnect();
+                this.Sensor.Dispose();
+            }
+        }
     }
 }
