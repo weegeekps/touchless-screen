@@ -101,6 +101,11 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         {
             this.touchlessScreen.Initialize();
 
+            if (this.touchlessScreen.Sensor == null)
+            {
+                throw new Exception("Sensor was not initialized!");
+            }
+
             // Create the drawing group we'll use for drawing
             this.drawingGroup = new DrawingGroup();
 

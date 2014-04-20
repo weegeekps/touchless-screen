@@ -155,8 +155,15 @@ namespace TouchlessScreenLibrary
 
         private void UpdateMultiTouch(Point2d<int> position)
         {
-            // TODO: Flesh out UpdateMultiTouch.
-            throw new NotImplementedException();
+            List<MultitouchPointerInfo> pointers = new List<MultitouchPointerInfo>(5);
+
+            pointers.Add(new MultitouchPointerInfo());
+            pointers[0].X = position.X;
+            pointers[0].Y = position.Y;
+            pointers[0].Down = true;
+
+            MultitouchReport report = new MultitouchReport(pointers);
+            vMulti.updateMultitouch(report);
         }
         #endregion
 
@@ -309,6 +316,10 @@ namespace TouchlessScreenLibrary
 
                 Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
                 Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
+
+                this.UpdateMultiTouch(new Point2d<int>(700, 700));
+                this.UpdateMultiTouch(new Point2d<int>(750, 700));
+                this.UpdateMultiTouch(new Point2d<int>(800, 700));
 
                 System.Diagnostics.Debug.WriteLine(screenPos.ToString());
                 // *** END POINTER CODE
