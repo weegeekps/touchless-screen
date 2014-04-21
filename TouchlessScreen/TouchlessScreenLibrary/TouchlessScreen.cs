@@ -47,8 +47,8 @@ namespace TouchlessScreenLibrary
         private bool isInitalized;
         private Skeleton[] skeletons;
         private VMulti vMulti;
-        private bool pressOnce = false;
-        private int iterationCounter = 0;
+        //private bool pressOnce = false;
+        //private int iterationCounter = 0;
 
         /// <summary>
         /// Intermediate storage for the depth data received from the camera
@@ -302,16 +302,11 @@ namespace TouchlessScreenLibrary
                 this.elbowPoint = GetSkeletonDepthPoint(e, JointType.ElbowLeft);
                 this.wristPoint = GetSkeletonDepthPoint(e, JointType.WristLeft);
 
-                double lenPartOne;
-                double lenPartTwo;
-                double lenPartThree;
-                double armLength;
-
                 //get arm length to determine threshold
-                lenPartOne = Math.Sqrt(Math.Pow(shoulderPoint.X - elbowPoint.X,2) + Math.Pow(shoulderPoint.Y - elbowPoint.Y,2) + Math.Pow(shoulderPoint.Depth - elbowPoint.Depth,2));
-                lenPartTwo = Math.Sqrt(Math.Pow(elbowPoint.X - wristPoint.X, 2) + Math.Pow(elbowPoint.Y - wristPoint.Y, 2) + Math.Pow(elbowPoint.Depth - wristPoint.Depth, 2));
-                lenPartThree = Math.Sqrt(Math.Pow(wristPoint.X - handPoint.X, 2) + Math.Pow(wristPoint.Y - handPoint.Y, 2) + Math.Pow(wristPoint.Depth - handPoint.Depth, 2));
-                armLength = lenPartOne + lenPartTwo + lenPartThree;
+                double lenPartOne = Math.Sqrt(Math.Pow(shoulderPoint.X - elbowPoint.X,2) + Math.Pow(shoulderPoint.Y - elbowPoint.Y,2) + Math.Pow(shoulderPoint.Depth - elbowPoint.Depth,2));
+                double lenPartTwo = Math.Sqrt(Math.Pow(elbowPoint.X - wristPoint.X, 2) + Math.Pow(elbowPoint.Y - wristPoint.Y, 2) + Math.Pow(elbowPoint.Depth - wristPoint.Depth, 2));
+                double lenPartThree = Math.Sqrt(Math.Pow(wristPoint.X - handPoint.X, 2) + Math.Pow(wristPoint.Y - handPoint.Y, 2) + Math.Pow(wristPoint.Depth - handPoint.Depth, 2));
+                double armLength = lenPartOne + lenPartTwo + lenPartThree;
 
                 //set click zone threshold as 25mm less than arm length
                 //may need to move to own method
@@ -319,7 +314,8 @@ namespace TouchlessScreenLibrary
 
                 //enter click zone threshold
                 if (shoulderPoint.Depth - handPoint.Depth > threshold)
-                { 
+                {
+                    System.Diagnostics.Debug.WriteLine("ALERT: Arm is in threshold!");
                     //if single tracked finger; single click
                     //if two tracked fingers; right click
                     //if single tracked finger twice; double click
@@ -338,20 +334,20 @@ namespace TouchlessScreenLibrary
                 Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
                 Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
 
-                this.iterationCounter++;
-                if (this.iterationCounter % 100 == 0)
-                {
-                    this.pressOnce = false;
-                }
+                //this.iterationCounter++;
+                //if (this.iterationCounter % 100 == 0)
+                //{
+                //    this.pressOnce = false;
+                //}
 
-                if (this.pressOnce == false)
-                {
-                    /*this.UpdateMultiTouch(new Point2d<int>(30, 1060), false);
-                    this.UpdateMultiTouch(new Point2d<int>(30, 1060), true);
-                    this.UpdateMultiTouch(new Point2d<int>(30, 1060), false);*/
-                    this.UpdateMultiTouch(screenPos, true);
-                    this.pressOnce = true;
-                }
+                //if (this.pressOnce == false)
+                //{
+                //    /*this.UpdateMultiTouch(new Point2d<int>(30, 1060), false);
+                //    this.UpdateMultiTouch(new Point2d<int>(30, 1060), true);
+                //    this.UpdateMultiTouch(new Point2d<int>(30, 1060), false);*/
+                //    this.UpdateMultiTouch(screenPos, true);
+                //    this.pressOnce = true;
+                //}
 
                 System.Diagnostics.Debug.WriteLine("Hand Pos: " + ptHandPoint.ToString());
                 System.Diagnostics.Debug.WriteLine("Pointer Pos: " + screenPos.ToString());
