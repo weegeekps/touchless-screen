@@ -1,4 +1,5 @@
-﻿using Microsoft.Kinect;
+﻿using System.Windows.Forms;
+using Microsoft.Kinect;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,9 +28,9 @@ namespace TouchlessScreenLibrary
         public const float RenderHeight = 480.0f;
         public const int IMG_HEIGHT = (int)RenderHeight;
 
-        private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(180, 220, 0);
-        private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(325, 250, 0);
-        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(430, 320, 0);
+        private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(90, -90, 0);
+        private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(30, -130, 0);
+        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-30, -150, 0);
 
         private bool[,] handPixels;
         private bool[,] fingerPixels;
@@ -46,6 +47,8 @@ namespace TouchlessScreenLibrary
         private bool isInitalized;
         private Skeleton[] skeletons;
         private VMulti vMulti;
+        private bool pressOnce = false;
+        private int iterationCounter = 0;
 
         /// <summary>
         /// Intermediate storage for the depth data received from the camera
@@ -116,6 +119,10 @@ namespace TouchlessScreenLibrary
             int x;
             int y;
             int t;
+            int cursorX;
+            int cursorY;
+            double translatedX;
+            double translatedY;
 
             if (origin.Equals(new Point3d<int>(0, 0, 0)) || direction.Equals(new Point3d<int>(0, 0, 0)))
             {
@@ -134,12 +141,30 @@ namespace TouchlessScreenLibrary
             x = origin.X + (direction.X * t);
             y = origin.Y + (direction.Y * t);
 
-            // THIS ISN'T DONE YET.
-            // TODO: ACTUALLY GET MapRealspacePointToScreen working correctly!
-            return new Point2d<int>
+            Point2d<double> userPointer = new Point2d<double>
             {
                 X = x,
                 Y = y,
+            };
+
+            // Translate into something usable
+            //   NOTE: This ends up being 16px blocks with Adam's calibration settings. Not a great resolution, but decent.
+            translatedX = ((userPointer.X - DEPTH_LOWER_RIGHT.X) / (DEPTH_UPPER_LEFT.X - DEPTH_LOWER_RIGHT.X)) * System.Windows.SystemParameters.PrimaryScreenWidth; // Screen Width is likely 1920
+            translatedY = ((userPointer.Y - DEPTH_LOWER_RIGHT.Y) / (DEPTH_UPPER_LEFT.Y - DEPTH_LOWER_RIGHT.Y)) * System.Windows.SystemParameters.PrimaryScreenHeight; // Screen Height is likely 1080
+
+            cursorX = (int)Math.Ceiling(System.Windows.SystemParameters.PrimaryScreenWidth - translatedX);
+            cursorY = (int)Math.Ceiling(System.Windows.SystemParameters.PrimaryScreenHeight - translatedY);
+            cursorY = Math.Abs(cursorY);
+
+            if (cursorX < 0 || cursorY < 0 || cursorX > System.Windows.SystemParameters.PrimaryScreenWidth || cursorY > System.Windows.SystemParameters.PrimaryScreenHeight)
+            {
+                System.Diagnostics.Debug.WriteLine("WARNING: Cursor position outside of bounds. X: {0} Y: {1}", cursorX, cursorY);
+            }
+
+            return new Point2d<int>
+            {
+                X = cursorX,
+                Y = cursorY,
             };
         }
 
@@ -153,14 +178,15 @@ namespace TouchlessScreenLibrary
             };
         }
 
-        private void UpdateMultiTouch(Point2d<int> position)
+        private void UpdateMultiTouch(Point2d<int> position, bool press)
         {
             List<MultitouchPointerInfo> pointers = new List<MultitouchPointerInfo>(5);
 
             pointers.Add(new MultitouchPointerInfo());
-            pointers[0].X = position.X;
-            pointers[0].Y = position.Y;
-            pointers[0].Down = true;
+            pointers[0].X = position.X / System.Windows.SystemParameters.PrimaryScreenWidth;
+            pointers[0].Y = position.Y / System.Windows.SystemParameters.PrimaryScreenHeight;
+
+            pointers[0].Down = press;
 
             MultitouchReport report = new MultitouchReport(pointers);
             vMulti.updateMultitouch(report);
@@ -168,7 +194,6 @@ namespace TouchlessScreenLibrary
         #endregion
 
         #region Public Methods & Properties
-
         /// <summary>
         /// Active Kinect sensor
         /// </summary>
@@ -269,7 +294,6 @@ namespace TouchlessScreenLibrary
  
         public void HandleSensorEvent(object sender, AllFramesReadyEventArgs e)
         {
-            
             try
             {
                 this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
@@ -302,9 +326,6 @@ namespace TouchlessScreenLibrary
                     //if two tracked fingers twice; enter scroll lock
                 }
 
-                
-
-
                 //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
                 //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
                 //System.Diagnostics.Debug.WriteLine(pointerRay);
@@ -317,11 +338,23 @@ namespace TouchlessScreenLibrary
                 Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
                 Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
 
-                this.UpdateMultiTouch(new Point2d<int>(700, 700));
-                this.UpdateMultiTouch(new Point2d<int>(750, 700));
-                this.UpdateMultiTouch(new Point2d<int>(800, 700));
+                this.iterationCounter++;
+                if (this.iterationCounter % 100 == 0)
+                {
+                    this.pressOnce = false;
+                }
 
-                System.Diagnostics.Debug.WriteLine(screenPos.ToString());
+                if (this.pressOnce == false)
+                {
+                    /*this.UpdateMultiTouch(new Point2d<int>(30, 1060), false);
+                    this.UpdateMultiTouch(new Point2d<int>(30, 1060), true);
+                    this.UpdateMultiTouch(new Point2d<int>(30, 1060), false);*/
+                    this.UpdateMultiTouch(screenPos, true);
+                    this.pressOnce = true;
+                }
+
+                System.Diagnostics.Debug.WriteLine("Hand Pos: " + ptHandPoint.ToString());
+                System.Diagnostics.Debug.WriteLine("Pointer Pos: " + screenPos.ToString());
                 // *** END POINTER CODE
 
                 
