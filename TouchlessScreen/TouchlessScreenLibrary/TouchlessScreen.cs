@@ -39,8 +39,8 @@ namespace TouchlessScreenLibrary
         public DepthImagePoint handPoint;
         public DepthImagePoint headPoint;
         public DepthImagePoint shoulderPoint;
-        public DepthImagePoint elbowPoint;
-        public DepthImagePoint wristPoint;
+        //public DepthImagePoint elbowPoint;
+        //public DepthImagePoint wristPoint;
         public int threshold;
         private static readonly Lazy<TouchlessScreen> lazy = new Lazy<TouchlessScreen>(() => new TouchlessScreen());
 
@@ -299,18 +299,19 @@ namespace TouchlessScreenLibrary
                 this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
                 this.headPoint = GetSkeletonDepthPoint(e, JointType.Head);
                 this.shoulderPoint = GetSkeletonDepthPoint(e, JointType.ShoulderLeft);
-                this.elbowPoint = GetSkeletonDepthPoint(e, JointType.ElbowLeft);
-                this.wristPoint = GetSkeletonDepthPoint(e, JointType.WristLeft);
+                //this.elbowPoint = GetSkeletonDepthPoint(e, JointType.ElbowLeft);
+                //this.wristPoint = GetSkeletonDepthPoint(e, JointType.WristLeft);
 
                 //get arm length to determine threshold
-                double lenPartOne = Math.Sqrt(Math.Pow(shoulderPoint.X - elbowPoint.X,2) + Math.Pow(shoulderPoint.Y - elbowPoint.Y,2) + Math.Pow(shoulderPoint.Depth - elbowPoint.Depth,2));
-                double lenPartTwo = Math.Sqrt(Math.Pow(elbowPoint.X - wristPoint.X, 2) + Math.Pow(elbowPoint.Y - wristPoint.Y, 2) + Math.Pow(elbowPoint.Depth - wristPoint.Depth, 2));
-                double lenPartThree = Math.Sqrt(Math.Pow(wristPoint.X - handPoint.X, 2) + Math.Pow(wristPoint.Y - handPoint.Y, 2) + Math.Pow(wristPoint.Depth - handPoint.Depth, 2));
-                double armLength = lenPartOne + lenPartTwo + lenPartThree;
+                //double lenPartOne = Math.Sqrt(Math.Pow(shoulderPoint.X - elbowPoint.X,2) + Math.Pow(shoulderPoint.Y - elbowPoint.Y,2) + Math.Pow(shoulderPoint.Depth - elbowPoint.Depth,2));
+                //double lenPartTwo = Math.Sqrt(Math.Pow(elbowPoint.X - wristPoint.X, 2) + Math.Pow(elbowPoint.Y - wristPoint.Y, 2) + Math.Pow(elbowPoint.Depth - wristPoint.Depth, 2));
+                //double lenPartThree = Math.Sqrt(Math.Pow(wristPoint.X - handPoint.X, 2) + Math.Pow(wristPoint.Y - handPoint.Y, 2) + Math.Pow(wristPoint.Depth - handPoint.Depth, 2));
+                //double armLength = lenPartOne + lenPartTwo + lenPartThree;
 
                 //set click zone threshold as 25mm less than arm length
                 //may need to move to own method
-                threshold = Convert.ToInt32(armLength) - 25;
+                //threshold = Convert.ToInt32(armLength) - 25;
+                threshold = 500;
 
                 //enter click zone threshold
                 if (shoulderPoint.Depth - handPoint.Depth > threshold)
