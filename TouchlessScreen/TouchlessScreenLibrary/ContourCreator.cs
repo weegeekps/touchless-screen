@@ -9,8 +9,12 @@ namespace TouchlessScreenLibrary
     {
         private bool[,] contourPixels;
         private int width, height, firstX, firstY, nextX, nextY, currX, currY, dirX, dirY;
-        private int[,] rotations;
+        private static int[,] rotations;
 
+        static ContourCreator()
+        {
+            rotations = Direction.getDirections();
+        }
 
         /// <summary>
         /// Creates a ContourCreator backed by the array of pixels which form the rough contour
@@ -21,30 +25,6 @@ namespace TouchlessScreenLibrary
             this.contourPixels = contourPixels;
             width = contourPixels.GetLength(0);
             height = contourPixels.GetLength(1);
-            rotations = new int[2, 8];
-            rotations[0, 0] = 1;
-            rotations[1, 0] = 0;
-
-            rotations[0, 1] = 1;
-            rotations[1, 1] = 1;
-
-            rotations[0, 2] = 0;
-            rotations[1, 2] = 1;
-
-            rotations[0, 3] = -1;
-            rotations[1, 3] = 1;
-
-            rotations[0, 4] = -1;
-            rotations[1, 4] = 0;
-
-            rotations[0, 5] = -1;
-            rotations[1, 5] = -1;
-
-            rotations[0, 6] = 0;
-            rotations[1, 6] = -1;
-
-            rotations[0, 7] = 1;
-            rotations[1, 7] = -1;
         }
         private void findCornerPoint()
         {
@@ -67,7 +47,7 @@ namespace TouchlessScreenLibrary
             int dx = (int)(dirX - currX);
             int dy = (int)(dirY - currY);
             const int numDirs = 8;
-            int startDir = GetDirectionIndex(dx, dy);
+            int startDir = Direction.GetDirectionIndex(dx, dy);
             int dirIndex;
             for (int j = startDir; j < startDir + numDirs; j++)
             {
@@ -116,58 +96,7 @@ namespace TouchlessScreenLibrary
             return contour;
         }
 
-        /// <summary>
-        /// Copied from Candesent NUI
-        /// </summary>
-        /// <param name="dx"></param>
-        /// <param name="dy"></param>
-        /// <returns></returns>
-        private int GetDirectionIndex(int dx, int dy)
-        {
-            if (dy == -1)
-            {
-                if (dx == -1)
-                {
-                    return 6;
-                }
-                if (dx == 0)
-                {
-                    return 7;
-                }
-                if (dx == 1)
-                {
-                    return 0;
-                }
-            }
-            if (dy == 0)
-            {
-                if (dx == -1)
-                {
-                    return 5;
-                }
-                if (dx == 1)
-                {
-                    return 1;
-                }
-            }
-            if (dy == 1)
-            {
-                if (dx == -1)
-                {
-                    return 4;
-                }
-                if (dx == 0)
-                {
-                    return 3;
-                }
-                if (dx == 1)
-                {
-                    return 2;
-                }
-            }
-            return 0;
-        }
-    }
+    }  
 
 
 }
