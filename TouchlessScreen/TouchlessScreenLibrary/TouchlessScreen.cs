@@ -473,8 +473,8 @@ namespace TouchlessScreenLibrary
                 else if (fingerPixels[x, y])
                 {
                     colorPixels[colorPixelIndex++] = 0;
-                    colorPixels[colorPixelIndex++] = 0;
                     colorPixels[colorPixelIndex++] = 255;
+                    colorPixels[colorPixelIndex++] = 0;
                 }
                 /*else if (contourPixels[x, y])
                 {
