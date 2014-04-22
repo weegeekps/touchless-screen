@@ -16,6 +16,11 @@
             this.X = point3d.X;
             this.Y = point3d.Y;
         }
+
+        public override string ToString()
+        {
+            return string.Format("X:{0} Y:{1}", this.X, this.Y);
+        }
     }
 
     public struct Point3d<T>
@@ -36,6 +41,21 @@
             this.X = point2d.X;
             this.Y = point2d.Y;
             this.Z = z;
+        }
+
+        public bool Equals(Point3d<T> obj)
+        {
+            if (this.X.Equals(obj.X) && this.Y.Equals(obj.Y) && this.Z.Equals(obj.Z))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("X:{0} Y:{1} Z:{2}", this.X, this.Y, this.Z);
         }
     }
 }
