@@ -291,7 +291,8 @@ namespace TouchlessScreenLibrary
 
             this.isInitalized = true;
         }
- 
+
+
         public void HandleSensorEvent(object sender, AllFramesReadyEventArgs e)
         {
             try
@@ -421,9 +422,12 @@ namespace TouchlessScreenLibrary
                             findInteriorAndContour(interior);
                             List<Tuple<int, int>> filtered_contour = (new ContourCreator(contourPixels)).findContour();
                             //we could probably play around with these parameters alot
-                            Tuple<int, int> center = FingerFinder.findPalmCenter(interior, contour);
-                            List<Tuple<int, int>> fingerPoints = FingerFinder.reduceFingerPoints(FingerFinder.findFingers(filtered_contour, 30, 1.7, center.Item1, center.Item2));
-                            fingerPoints.ForEach(i =>
+                            Tuple<int, int> center = FingerFinder.findPalmCenter(interior, filtered_contour);
+                            /*FingerFinder.reduceFingerPoints(FingerFinder.findFingers(filtered_contour, 10, 0.75, center.Item1, center.Item2)).ForEach(i =>
+                            {
+                                fingerPixels[i.Item1, i.Item2] = true;
+                            });*/
+                            FingerFinder.findFingersByContour(filtered_contour,center.Item1,center.Item2).ForEach(i =>
                             {
                                 fingerPixels[i.Item1, i.Item2] = true;
                             });
@@ -442,6 +446,7 @@ namespace TouchlessScreenLibrary
         {
             // Convert the depth to RGB
             int colorPixelIndex = 0;
+            if (intensityValues == null) return;
             for (int i = 0; i < this.depthPixels.Length; ++i)
             {
                 short depth = depthPixels[i].Depth;
@@ -471,12 +476,12 @@ namespace TouchlessScreenLibrary
                     colorPixels[colorPixelIndex++] = 0;
                     colorPixels[colorPixelIndex++] = 255;
                 }
-                else if (contourPixels[x, y])
+                /*else if (contourPixels[x, y])
                 {
                     colorPixels[colorPixelIndex++] = 255;
                     colorPixels[colorPixelIndex++] = 0;
                     colorPixels[colorPixelIndex++] = 0;
-                }
+                }*/
                 else
                 {
                     colorPixels[colorPixelIndex++] = 0;
