@@ -314,21 +314,6 @@ namespace TouchlessScreenLibrary
                 //threshold = Convert.ToInt32(armLength) - 25;
                 threshold = 500;
 
-                //enter click zone threshold
-                if (shoulderPoint.Depth - handPoint.Depth > threshold)
-                {
-                    System.Diagnostics.Debug.WriteLine("ALERT: Arm is in threshold!");
-                    //if single tracked finger; single click
-                    //if two tracked fingers; right click
-                    //if single tracked finger twice; double click
-                    //if two tracked fingers twice; enter scroll lock
-                }
-
-                //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
-                //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
-                //System.Diagnostics.Debug.WriteLine(pointerRay);
-                //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString() + " && " + this.ConvertDepthImagePointToPoint3d(this.headPoint).ToString());
-
                 // *** POINTER CODE, SHOULD BE MOVED TO OWN METHOD WHEN DONE ***
                 Point3d<int> ptHandPoint = this.ConvertDepthImagePointToPoint3d(this.handPoint);
                 Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
@@ -354,6 +339,22 @@ namespace TouchlessScreenLibrary
                 System.Diagnostics.Debug.WriteLine("Hand Pos: " + ptHandPoint.ToString());
                 System.Diagnostics.Debug.WriteLine("Pointer Pos: " + screenPos.ToString());
                 // *** END POINTER CODE
+
+                //enter click zone threshold
+                if (shoulderPoint.Depth - handPoint.Depth > threshold)
+                {
+                    System.Diagnostics.Debug.WriteLine("ALERT: Arm is in threshold!");
+                    //if single tracked finger; single click
+                    //if two tracked fingers; right click
+                    //if single tracked finger twice; double click
+                    //if two tracked fingers twice; enter scroll lock
+                    this.UpdateMultiTouch(screenPos, true);
+                }
+
+                //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
+                //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
+                //System.Diagnostics.Debug.WriteLine(pointerRay);
+                //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString() + " && " + this.ConvertDepthImagePointToPoint3d(this.headPoint).ToString());
 
                 
 
