@@ -180,13 +180,25 @@ namespace TouchlessScreenLibrary
 
         private void UpdateMultiTouch(Point2d<int> position, bool press)
         {
-            List<MultitouchPointerInfo> pointers = new List<MultitouchPointerInfo>(5);
+            List<Point2d<int>> positions = new List<Point2d<int>>(1);
 
-            pointers.Add(new MultitouchPointerInfo());
-            pointers[0].X = position.X / System.Windows.SystemParameters.PrimaryScreenWidth;
-            pointers[0].Y = position.Y / System.Windows.SystemParameters.PrimaryScreenHeight;
+            positions.Add(position);
 
-            pointers[0].Down = press;
+            this.UpdateMultiTouch(positions, press);
+        }
+
+        private void UpdateMultiTouch(List<Point2d<int>> positions, bool press)
+        {
+            List<MultitouchPointerInfo> pointers = new List<MultitouchPointerInfo>(positions.Count);
+
+            for (int i = 0; i < positions.Count; ++i)
+            {
+                pointers.Add(new MultitouchPointerInfo());
+                pointers[i].X = positions[i].X/System.Windows.SystemParameters.PrimaryScreenWidth;
+                pointers[i].Y = positions[i].Y/System.Windows.SystemParameters.PrimaryScreenHeight;
+
+                pointers[i].Down = press;
+            }
 
             MultitouchReport report = new MultitouchReport(pointers);
             vMulti.updateMultitouch(report);
