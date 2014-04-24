@@ -331,7 +331,7 @@ namespace TouchlessScreenLibrary
                 Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
 
                 Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
-                Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
+                //Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
 
                 //this.iterationCounter++;
                 //if (this.iterationCounter % 100 == 0)
@@ -349,19 +349,11 @@ namespace TouchlessScreenLibrary
                 //}
 
                 System.Diagnostics.Debug.WriteLine("Hand Pos: " + ptHandPoint.ToString());
-                System.Diagnostics.Debug.WriteLine("Pointer Pos: " + screenPos.ToString());
+                //System.Diagnostics.Debug.WriteLine("Pointer Pos: " + screenPos.ToString());
                 // *** END POINTER CODE
 
                 //enter click zone threshold
-                if (shoulderPoint.Depth - handPoint.Depth > threshold)
-                {
-                    System.Diagnostics.Debug.WriteLine("ALERT: Arm is in threshold!");
-                    //if single tracked finger; single click
-                    //if two tracked fingers; right click
-                    //if single tracked finger twice; double click
-                    //if two tracked fingers twice; enter scroll lock
-                    this.UpdateMultiTouch(screenPos, true);
-                }
+                
 
                 //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
                 //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
@@ -431,6 +423,7 @@ namespace TouchlessScreenLibrary
                             List<Tuple<int, int>> contour = new List<Tuple<int, int>>();
                             List<Tuple<int, int>> interior = new List<Tuple<int, int>>();
                             contourPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
+                            int x, y;
                             fingerPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
                             findInteriorAndContour(interior);
                             List<Tuple<int, int>> filtered_contour = (new ContourCreator(contourPixels)).findContour();
@@ -440,10 +433,25 @@ namespace TouchlessScreenLibrary
                             {
                                 fingerPixels[i.Item1, i.Item2] = true;
                             });*/
+                            List<Point2d<int>> fingerPoints = new List<Point2d<int>>(5); 
                             FingerFinder.findFingersByContour(filtered_contour,center.Item1,center.Item2).ForEach(i =>
                             {
                                 fingerPixels[i.Item1, i.Item2] = true;
+                                x = i.Item1;
+                                y = i.Item2;
+                                Point3d<int> ptFingerPoint = new Point3d<int>(x, y, handPoint.Depth);
+                                Point2d<int> fingerPos = this.MapRealspacePointToScreen(ptHeadPoint, ptFingerPoint, normalVector);
+                                fingerPoints.Add(fingerPos);
                             });
+                            if (shoulderPoint.Depth - handPoint.Depth > threshold)
+                            {
+                                System.Diagnostics.Debug.WriteLine("ALERT: Arm is in threshold!");
+                                //if single tracked finger; single click
+                                //if two tracked fingers; right click
+                                //if single tracked finger twice; double click
+                                //if two tracked fingers twice; enter scroll lock
+                                this.UpdateMultiTouch(fingerPoints, true);
+                            }
                         }
                         
                     }
