@@ -28,9 +28,12 @@ namespace TouchlessScreenLibrary
         public const float RenderHeight = 480.0f;
         public const int IMG_HEIGHT = (int)RenderHeight;
 
-        private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(90, -90, 0);
+        /*private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(90, -90, 0);
         private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(30, -130, 0);
-        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-30, -150, 0);
+        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-30, -150, 0);*/
+        private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(120, -100, 0); 
+        private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(36, -140, 0); 
+        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-40, -160, 0); 
 
         private bool[,] handPixels;
         private bool[,] fingerPixels;
@@ -147,14 +150,19 @@ namespace TouchlessScreenLibrary
                 Y = y,
             };
 
+            System.Diagnostics.Debug.WriteLine("WARNING: Pointing at - " + userPointer.ToString());
+
             // Translate into something usable
             //   NOTE: This ends up being 16px blocks with Adam's calibration settings. Not a great resolution, but decent.
-            translatedX = ((userPointer.X - DEPTH_LOWER_RIGHT.X) / (DEPTH_UPPER_LEFT.X - DEPTH_LOWER_RIGHT.X)) * System.Windows.SystemParameters.PrimaryScreenWidth; // Screen Width is likely 1920
-            translatedY = ((userPointer.Y - DEPTH_LOWER_RIGHT.Y) / (DEPTH_UPPER_LEFT.Y - DEPTH_LOWER_RIGHT.Y)) * System.Windows.SystemParameters.PrimaryScreenHeight; // Screen Height is likely 1080
+            translatedX = ((userPointer.X - DEPTH_UPPER_LEFT.X) / (DEPTH_LOWER_RIGHT.X - DEPTH_UPPER_LEFT.X)) * System.Windows.SystemParameters.PrimaryScreenWidth; // Screen Width is likely 1920
+            translatedY = ((userPointer.Y - DEPTH_UPPER_LEFT.Y) / (DEPTH_LOWER_RIGHT.Y - DEPTH_UPPER_LEFT.Y)) * System.Windows.SystemParameters.PrimaryScreenHeight; // Screen Height is likely 1080
 
-            cursorX = (int)Math.Ceiling(System.Windows.SystemParameters.PrimaryScreenWidth - translatedX);
-            cursorY = (int)Math.Ceiling(System.Windows.SystemParameters.PrimaryScreenHeight - translatedY);
-            cursorY = Math.Abs(cursorY);
+            //cursorX = (int)Math.Ceiling(System.Windows.SystemParameters.PrimaryScreenWidth - translatedX);
+            //cursorY = (int)Math.Ceiling(System.Windows.SystemParameters.PrimaryScreenHeight - translatedY);
+            //cursorY = Math.Abs(cursorY);
+
+            cursorX = (int)Math.Ceiling(translatedX);
+            cursorY = (int)Math.Ceiling(translatedY);
 
             if (cursorX < 0 || cursorY < 0 || cursorX > System.Windows.SystemParameters.PrimaryScreenWidth || cursorY > System.Windows.SystemParameters.PrimaryScreenHeight)
             {
