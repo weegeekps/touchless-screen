@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.Kinect;
 
 namespace TouchlessScreenLibrary
 {
@@ -96,7 +97,14 @@ namespace TouchlessScreenLibrary
             return contour;
         }
 
-    }  
+        public List<Point3d<int>> find3DContour(DepthImagePixel[] depthPixels)
+        {
+            List<Tuple<int, int>> contour2D = findContour();
+            return contour2D.Select(i => new Point3d<int>(i.Item1, i.Item2, depthPixels[i.Item1 * 640 + i.Item2].Depth)).ToList();
+        }
+
+    }
+  
 
 
 }

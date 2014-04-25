@@ -369,10 +369,16 @@ namespace TouchlessScreenLibrary
                             {
                                 fingerPixels[i.Item1, i.Item2] = true;
                             });*/
-                            FingerFinder.findFingersByContour(filtered_contour,center.Item1,center.Item2).ForEach(i =>
+                            FingerFinder.getNextFingerPositions(FingerFinder.findFingersByContour(filtered_contour,center.Item1,center.Item2)).ForEach(i =>
                             {
                                 fingerPixels[i.Item1, i.Item2] = true;
                             });
+                            /*List<Point3d<int>> filtered_contour = (new ContourCreator(contourPixels)).find3DContour(depthPixels);
+                            Point3d<int> center = FingerFinder.findPalmCenter3D(filtered_contour, depthPixels);
+                            FingerFinder.findFingersByContour3D(filtered_contour,center.X,center.Y,center.Z).ForEach(i =>
+                            {
+                                fingerPixels[i.X, i.Y] = true;
+                            });*/
                         }
                         
                     }
