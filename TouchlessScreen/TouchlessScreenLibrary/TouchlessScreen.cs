@@ -461,7 +461,6 @@ namespace TouchlessScreenLibrary
                                 this.UpdateMultiTouch(fingerPoints, true);
                             }
                         }
-                        
                     }
                 }
             }

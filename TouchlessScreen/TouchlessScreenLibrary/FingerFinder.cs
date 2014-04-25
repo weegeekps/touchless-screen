@@ -61,7 +61,7 @@ namespace TouchlessScreenLibrary
                 string[] output = new string[len];
                 for (int i = 0; i < k; i++) output[i] = contour[i].Item1 + "," + contour[i].Item2 + ",NAN";
                 for (int i = k; i < len; ++i) output[i] = contour[i].Item1 + "," + contour[i].Item2 + ","+angles[i-k];
-                System.IO.File.WriteAllLines("contour" + static_count + ".csv", output);
+                //System.IO.File.WriteAllLines("contour" + static_count + ".csv", output);
                 len = 5;
             }
             static_count++;
@@ -105,7 +105,7 @@ namespace TouchlessScreenLibrary
             int len = contour.Count, x, y, max_x = center_x, max_y = center_y, min_x = center_x, min_y = center_y;
             string[] output = new string[len];
             for (int i = 0; i < len; ++i) output[i] = contour[i].Item1 + "," + contour[i].Item2;
-            System.IO.File.WriteAllLines("contour" + static_count + ".csv", output);
+            //System.IO.File.WriteAllLines("contour" + static_count + ".csv", output);
             double maxDist = 0, minDist = double.MaxValue;
             double currDist;
             bool findMax = true;
