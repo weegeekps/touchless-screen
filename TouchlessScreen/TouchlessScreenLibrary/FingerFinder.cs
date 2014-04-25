@@ -137,14 +137,12 @@ namespace TouchlessScreenLibrary
         /// <returns></returns>
         public static List<Tuple<int, int>> getNextFingerPositions(List<Tuple<int, int>> next)
         {
-            int nextLen = next.Count,i;
+            
             List<Tuple<int, int>> values = new List<Tuple<int, int>>(5);
             int missing;
-            if (nextLen > 5)
-            {
-                next = next.Where((p, k) => k < 5).OrderBy(t => t.Item1).ToList();
-                nextLen = 5;
-            }
+
+            next = next.Where((p, k) => k < 5).OrderBy(t => t.Item1).ToList();
+            int nextLen = next.Count, i;
 
             for (i = 0; i < nextLen; i++)
             {
@@ -227,14 +225,7 @@ namespace TouchlessScreenLibrary
                     }
                     else if(currDist < 0.8 * maxDist)
                     {
-                        int nidx = (i - 30) % len;
-                        if(nidx <0) nidx += len;
-                        int v1_x = contour[i].Item1 - contour[nidx].Item1;
-                        int v1_y = contour[i].Item2 - contour[nidx].Item2;
-                        int v2_x = contour[i].Item1 - contour[(i + 30) % len].Item1;
-                        int v2_y = contour[i].Item2 - contour[(i + 30) % len].Item2;
-                        double angle = Math.Acos(((double)(v1_x * v2_x + v1_y * v2_y)) / (Math.Sqrt(v1_x * v1_x + v1_y * v1_y) * Math.Sqrt(v2_x * v2_x + v2_y * v2_y)));
-                        /*if(angle < 40.0)*/ fingers.Add(new Tuple<int, int>(max_x, max_y));
+                        fingers.Add(new Tuple<int, int>(max_x, max_y));
                         findMax = false;
                         max_i = i;
                         maxDist = 0;
