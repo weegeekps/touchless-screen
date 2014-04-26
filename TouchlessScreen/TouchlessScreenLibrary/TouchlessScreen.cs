@@ -1,4 +1,5 @@
 ﻿using System.Windows.Forms;
+using KinectDepthSmoothing;
 using Microsoft.Kinect;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,9 @@ namespace TouchlessScreenLibrary
         private VMulti vMulti;
         //private bool pressOnce = false;
         //private int iterationCounter = 0;
+
+        private FilteredSmoothing smoothingFiltered = new FilteredSmoothing();
+        private AveragedSmoothing smoothingAverage = new AveragedSmoothing();
 
         /// <summary>
         /// Intermediate storage for the depth data received from the camera
@@ -339,7 +343,7 @@ namespace TouchlessScreenLibrary
                 Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
 
                 Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
-                //Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
+                Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
 
                 //this.iterationCounter++;
                 //if (this.iterationCounter % 100 == 0)
@@ -381,6 +385,14 @@ namespace TouchlessScreenLibrary
                     {
                         // Copy the pixel data from the image to a temporary array
                         depthFrame.CopyDepthImagePixelDataTo(this.depthPixels);
+
+                        //this.smoothingFiltered.InnerBandThreshold = 3;
+                        //this.smoothingFiltered.OuterBandThreshold = 7;
+                        //this.depthPixels = this.smoothingFiltered.CreateFilteredDepthArray(this.depthPixels, depthFrame.Width, depthFrame.Height);
+
+                        this.smoothingAverage.AverageFrameCount = 3;
+                        this.depthPixels = this.smoothingAverage.CreateAverageDepthArray(this.depthPixels, depthFrame.Width, depthFrame.Height);
+
                         if (handPoint.Depth == 0)
                         {
                             minDepth = depthFrame.MinDepth;
@@ -458,6 +470,7 @@ namespace TouchlessScreenLibrary
                                 //if two tracked fingers; right click
                                 //if single tracked finger twice; double click
                                 //if two tracked fingers twice; enter scroll lock
+                                //this.UpdateMultiTouch(screenPos, true);
                                 this.UpdateMultiTouch(fingerPoints, true);
                             }
                         }
@@ -507,8 +520,8 @@ namespace TouchlessScreenLibrary
                 /*else if (contourPixels[x, y])
                 {
                     colorPixels[colorPixelIndex++] = 255;
-                    colorPixels[colorPixelIndex++] = 0;
-                    colorPixels[colorPixelIndex++] = 0;
+                    colorPixels[colorPixelIndex++] = 255;
+                    colorPixels[colorPixelIndex++] = 255;
                 }*/
                 else
                 {
