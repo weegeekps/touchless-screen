@@ -167,7 +167,7 @@ namespace TouchlessScreenLibrary
             if (cursorX < 0 || cursorY < 0 || cursorX > System.Windows.SystemParameters.PrimaryScreenWidth || cursorY > System.Windows.SystemParameters.PrimaryScreenHeight)
             {
                 System.Diagnostics.Debug.WriteLine("WARNING: Cursor position outside of bounds. X: {0} Y: {1}", cursorX, cursorY);
-            }
+        }
 
             return new Point2d<int>
             {
@@ -359,9 +359,9 @@ namespace TouchlessScreenLibrary
                 System.Diagnostics.Debug.WriteLine("Hand Pos: " + ptHandPoint.ToString());
                 //System.Diagnostics.Debug.WriteLine("Pointer Pos: " + screenPos.ToString());
                 // *** END POINTER CODE
-
-                //enter click zone threshold
                 
+                //enter click zone threshold
+
 
                 //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
                 //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
@@ -442,16 +442,18 @@ namespace TouchlessScreenLibrary
                                 fingerPixels[i.Item1, i.Item2] = true;
                             });*/
                             List<Point2d<int>> fingerPoints = new List<Point2d<int>>(5); 
-                            FingerFinder.findFingersByContour(filtered_contour,center.Item1,center.Item2).ForEach(i =>
+                            FingerFinder.findFingersByContour(filtered_contour, center.Item1, center.Item2).ForEach(i =>
                             {
-                                fingerPixels[i.Item1, i.Item2] = true;
-                                x = i.Item1;
-                                y = i.Item2;
-                                Point3d<int> ptFingerPoint = new Point3d<int>(x, y, handPoint.Depth);
-                                Point2d<int> fingerPos = this.MapRealspacePointToScreen(ptHeadPoint, ptFingerPoint, normalVector);
-                                fingerPoints.Add(fingerPos);
-                            });
-                            if (shoulderPoint.Depth - handPoint.Depth > threshold)
+                                if (i.Item1 > 0 && i.Item2 > 0)
+                                {
+                                    fingerPixels[i.Item1, i.Item2] = true;
+                                    x = i.Item1;
+                                    y = i.Item2;
+                                    Point3d<int> ptFingerPoint = new Point3d<int>(x, y, handPoint.Depth);
+                                    Point2d<int> fingerPos = this.MapRealspacePointToScreen(ptHeadPoint, ptFingerPoint, normalVector);
+                                    fingerPoints.Add(fingerPos);
+                                }
+                            }); if (shoulderPoint.Depth - handPoint.Depth > threshold)
                             {
                                 System.Diagnostics.Debug.WriteLine("ALERT: Arm is in threshold!");
                                 //if single tracked finger; single click
