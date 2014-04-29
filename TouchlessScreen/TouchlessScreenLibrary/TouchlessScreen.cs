@@ -11,6 +11,10 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using VMultiDllWrapper;
+using CCT.NUI.HandTracking;
+using CCT.NUI.KinectSDK;
+using CCT.NUI.Core;
+
 
 namespace TouchlessScreenLibrary
 {
@@ -28,6 +32,8 @@ namespace TouchlessScreenLibrary
         public const float RenderHeight = 480.0f;
         public const int IMG_HEIGHT = (int)RenderHeight;
 
+
+        private List<Point2d<int>> fingerPoints;
         /*private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(90, -90, 0);
         private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(30, -130, 0);
         private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-30, -150, 0);*/
@@ -42,6 +48,7 @@ namespace TouchlessScreenLibrary
         public DepthImagePoint handPoint;
         public DepthImagePoint headPoint;
         public DepthImagePoint shoulderPoint;
+
         //public DepthImagePoint elbowPoint;
         //public DepthImagePoint wristPoint;
         public int threshold;
@@ -63,6 +70,7 @@ namespace TouchlessScreenLibrary
         {
             this.isInitalized = false;
             this.intensityValues = new byte[0];
+
         }
         #endregion
 
@@ -202,9 +210,10 @@ namespace TouchlessScreenLibrary
             for (int i = 0; i < positions.Count; ++i)
             {
                 pointers.Add(new MultitouchPointerInfo());
-                pointers[i].X = positions[i].X/System.Windows.SystemParameters.PrimaryScreenWidth;
-                pointers[i].Y = positions[i].Y/System.Windows.SystemParameters.PrimaryScreenHeight;
-
+                //pointers[i].X = positions[i].X/System.Windows.SystemParameters.PrimaryScreenWidth;
+                //pointers[i].Y = positions[i].Y/System.Windows.SystemParameters.PrimaryScreenHeight;
+                pointers[i].X = positions[i].X / RenderWidth;
+                pointers[i].Y = positions[i].Y / RenderHeight;
                 pointers[i].Down = press;
             }
 
@@ -218,6 +227,35 @@ namespace TouchlessScreenLibrary
         /// Active Kinect sensor
         /// </summary>
         public KinectSensor Sensor { get; private set; }
+
+        public void handleHandData(HandCollection data)
+        {
+            if (data.HandsDetected)
+            {
+                var hand = data.Hands[0];
+
+                fingerPoints = new List<Point2d<int>>(5);
+                int len = hand.FingerPoints.Count;
+                for (int i = 0; i < len; i++ )  fingerPoints.Add(new Point2d<int>((int)hand.FingerPoints[i].X,(int)hand.FingerPoints[i].Y));
+                if (hand.HasFingers)
+                {
+                    bool[,] nextFingerPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
+                    fingerPoints = FingerFinder.getNextFingerPositions(fingerPoints);
+                    fingerPoints.ForEach(i =>
+                    {
+                        if (i.X > 0 && i.Y > 0)
+                        {
+                            nextFingerPixels[i.X, i.Y] = true;
+                        }
+                    });
+                    this.UpdateMultiTouch(fingerPoints, true);
+                    fingerPixels = nextFingerPixels;
+                }
+            }
+            else if(fingerPoints == null) fingerPoints = new List<Point2d<int>>();
+
+
+        }
 
         public DepthImagePoint GetSkeletonDepthPoint(AllFramesReadyEventArgs eventArgs, JointType joint)
         {
@@ -427,7 +465,7 @@ namespace TouchlessScreenLibrary
                         }
                         if (handPoint.Depth != 0)
                         {
-                            //List<Tuple<int, int, int>> convexHull = ConvexHullCreator.CreateHull(points);
+                            /*//List<Tuple<int, int, int>> convexHull = ConvexHullCreator.CreateHull(points);
                             List<Tuple<int, int>> contour = new List<Tuple<int, int>>();
                             List<Tuple<int, int>> interior = new List<Tuple<int, int>>();
                             contourPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
@@ -441,17 +479,17 @@ namespace TouchlessScreenLibrary
                             {
                                 fingerPixels[i.Item1, i.Item2] = true;
                             });*/
-                            List<Point2d<int>> fingerPoints = new List<Point2d<int>>(5); 
-                            FingerFinder.findFingersByContour(filtered_contour, center.Item1, center.Item2).ForEach(i =>
+                            //List<Point2d<int>> fingerPoints = new List<Point2d<int>>(5); 
+                            fingerPoints.ForEach(i =>
                             {
-                                if (i.Item1 > 0 && i.Item2 > 0)
+                                if (i.X > 0 && i.Y > 0)
                                 {
-                                    fingerPixels[i.Item1, i.Item2] = true;
-                                    x = i.Item1;
-                                    y = i.Item2;
-                                    Point3d<int> ptFingerPoint = new Point3d<int>(x, y, handPoint.Depth);
-                                    Point2d<int> fingerPos = this.MapRealspacePointToScreen(ptHeadPoint, ptFingerPoint, normalVector);
-                                    fingerPoints.Add(fingerPos);
+                                    fingerPixels[i.X, i.Y] = true;
+                                    //x = i.Item1;
+                                   // y = i.Item2;
+                                    //Point3d<int> ptFingerPoint = new Point3d<int>(x, y, handPoint.Depth);
+                                   // Point2d<int> fingerPos = this.MapRealspacePointToScreen(ptHeadPoint, ptFingerPoint, normalVector);
+                                    //fingerPoints.Add(fingerPos);
                                 }
                             }); if (shoulderPoint.Depth - handPoint.Depth > threshold)
                             {
@@ -460,7 +498,7 @@ namespace TouchlessScreenLibrary
                                 //if two tracked fingers; right click
                                 //if single tracked finger twice; double click
                                 //if two tracked fingers twice; enter scroll lock
-                                this.UpdateMultiTouch(fingerPoints, true);
+                                //this.UpdateMultiTouch(fingerPoints, true);
                             }
                         }
                     }
@@ -479,28 +517,9 @@ namespace TouchlessScreenLibrary
             if (intensityValues == null) return;
             for (int i = 0; i < this.depthPixels.Length; ++i)
             {
-                short depth = depthPixels[i].Depth;
                 int x = i % 640;
                 int y = i / 640;
-                if (handPoint.Depth == 0)
-                {
-                    if (this.intensityValues.Length < 1)
-                    {
-                        System.Diagnostics.Debug.WriteLine("WARN: Intensity Values length was less than 0.");
-                        return;
-                    }
-
-                    byte intensity = intensityValues[i];
-                    // Write out blue byte
-                    colorPixels[colorPixelIndex++] = intensity;
-
-                    // Write out green byte
-                    colorPixels[colorPixelIndex++] = intensity;
-
-                    // Write out red byte                        
-                    colorPixels[colorPixelIndex++] = intensity;
-                }
-                else if (fingerPixels[x, y])
+                if (fingerPixels[x, y])
                 {
                     colorPixels[colorPixelIndex++] = 0;
                     colorPixels[colorPixelIndex++] = 255;
@@ -528,11 +547,6 @@ namespace TouchlessScreenLibrary
                 colorPixels,
                 colorBitmap.PixelWidth * sizeof(int),
                 0);
-            /*                  this.colorBitmap.WritePixels(
-              new Int32Rect(minX, minY, maxX, maxY),
-              this.colorPixels,
-              (maxX-minX) * sizeof(int),
-              minX); */
         }
 
         /// <summary>

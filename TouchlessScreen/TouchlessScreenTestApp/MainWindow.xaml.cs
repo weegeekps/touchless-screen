@@ -8,7 +8,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using TouchlessScreenLibrary;
 using TouchlessScreenTestApp;
-
+using CCT.NUI.HandTracking;
+using CCT.NUI.KinectSDK;
+using CCT.NUI.Core;
 
 namespace Microsoft.Samples.Kinect.DepthBasics
 {
@@ -76,7 +78,8 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// Drawing group for skeleton rendering output
         /// </summary>
         private DrawingGroup drawingGroup;
-
+        private IDataSourceFactory dataSourceFactory;
+        private HandDataSource handDataSource;
         /// <summary>
         /// Drawing image that we will display
         /// </summary>
@@ -125,12 +128,24 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             this.Image.Source = this.colorBitmap;
 
             // Add an event handler to be called whenever there is new color frame data
-            this.touchlessScreen.Sensor.AllFramesReady += this.SensorDepthFrameReady;
-
+            //this.touchlessScreen.Sensor.AllFramesReady += this.SensorDepthFrameReady;
+            dataSourceFactory = new SDKDataSourceFactory();
+            handDataSource = new HandDataSource(dataSourceFactory.CreateShapeDataSource());
+            handDataSource.NewDataAvailable += new NewDataHandler<HandCollection>(this.handleHandData);
+            handDataSource.Start();
             if (!this.touchlessScreen.TryStart())
             {
                 // TODO: Do some error handling here.
             }
+        }
+
+        public void handleHandData(HandCollection data)
+        {
+            this.touchlessScreen.handleHandData(data);
+            this.Dispatcher.Invoke((Action)(() =>
+            {
+                this.touchlessScreen.DrawBitmap(this.colorBitmap, this.colorPixels);
+            }));   
         }
 
         /// <summary>

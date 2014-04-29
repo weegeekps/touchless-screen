@@ -127,9 +127,15 @@ namespace TouchlessScreenLibrary
             return filtered;
         }
 
-        private static int N_SAMPLES = 7;
+        private static int N_SAMPLES = 3;
         private static Tuple<int, int>[,] fingerSamples;
         private static  int[] missingDuration;
+
+        public static List<Point2d<int>> getNextFingerPositions(List<Point2d<int>> next)
+        {
+            return getNextFingerPositions(next.Select(i => new Tuple<int, int>(i.X, i.Y)).ToList()).Select(j => new Point2d<int>(j.Item1,j.Item2)).ToList();
+        }
+
         /// <summary>
         /// Averages the finger positions N_Sample Times
         /// </summary>
