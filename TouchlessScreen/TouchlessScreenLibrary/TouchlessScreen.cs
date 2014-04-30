@@ -23,8 +23,8 @@ namespace TouchlessScreenLibrary
     public class TouchlessScreen : IDisposable
     {
         // Debug Logging Toggles
-        private const bool velocityLogging = false;
-        private const bool pointingLogging = true;
+        private const bool velocityLogging = true;
+        private const bool pointingLogging = false;
 
         /// <summary>
         /// Width of output drawing
@@ -42,9 +42,12 @@ namespace TouchlessScreenLibrary
         /*private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(90, -90, 0);
         private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(30, -130, 0);
         private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-30, -150, 0);*/
-        private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(120, -100, 0); 
+        /*private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(120, -100, 0); 
         private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(36, -140, 0); 
-        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-40, -160, 0); 
+        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-40, -160, 0); */
+        private static readonly Point3d<int> DEPTH_UPPER_LEFT = new Point3d<int>(130, -100, 0); 
+        private static readonly Point3d<int> DEPTH_CENTER = new Point3d<int>(4, -180, 0); 
+        private static readonly Point3d<int> DEPTH_LOWER_RIGHT = new Point3d<int>(-70, -200, 0);
 
         private bool[,] handPixels;
         private bool[,] fingerPixels;
@@ -52,6 +55,7 @@ namespace TouchlessScreenLibrary
         private byte[] intensityValues;
         public Point3d<int> handPoint;
         public DepthImagePoint headPoint;
+        public Point3d<int> ptHeadPoint; 
         public DepthImagePoint shoulderPoint;
 
         //public DepthImagePoint elbowPoint;
@@ -188,7 +192,7 @@ namespace TouchlessScreenLibrary
 
             if (cursorX < 0 || cursorY < 0 || cursorX > System.Windows.SystemParameters.PrimaryScreenWidth || cursorY > System.Windows.SystemParameters.PrimaryScreenHeight)
             {
-                System.Diagnostics.Debug.WriteLineIf(pointingLogging, string.Format("WARNING: Cursor position outside of bounds. X: {0} Y: {1}", cursorX, cursorY));
+                //System.Diagnostics.Debug.WriteLineIf(pointingLogging, string.Format("WARNING: Cursor position outside of bounds. X: {0} Y: {1}", cursorX, cursorY));
             }
 
             return new Point2d<int>
@@ -265,7 +269,7 @@ namespace TouchlessScreenLibrary
                     Z = (int)Math.Ceiling(hand.Location.Z),
                 };
 
-                System.Diagnostics.Debug.WriteLineIf(pointingLogging, "Hand at: " + this.handPoint);
+                //System.Diagnostics.Debug.WriteLineIf(pointingLogging, "Hand at: " + this.handPoint);
                 Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
 
                 Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
@@ -519,15 +523,16 @@ namespace TouchlessScreenLibrary
 
         public void HandleTouch()
         {
-            Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
+            Point3d<int> tempHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
+
+            if (!tempHeadPoint.Equals(new Point3d<int>(0, 0, 0)))
+            {
+                this.ptHeadPoint = tempHeadPoint;
+            }
 
             Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
 
-            if (pointingLogging)
-            {
-                Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, this.handPoint, normalVector);
-                System.Diagnostics.Debug.WriteLine("WARNING: Pointing at " + screenPos);
-            }
+            Point2d<int> screenPos = this.MapRealspacePointToScreen(this.ptHeadPoint, this.handPoint, normalVector);
 
             if (handPoint.Z != 0)
             {
@@ -572,6 +577,7 @@ namespace TouchlessScreenLibrary
                 this.lastDisplacement = currentDisplacement;
                 this.lastTime = currentTime;
 
+                this.UpdateMultiTouch(screenPos, this.pressDownOne, false);
                 //this.UpdateMultiTouch(this.fingerPoints, this.pressDownOne, this.pressDownAll);
 
                 this.pressDownOne = true;
