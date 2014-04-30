@@ -3,13 +3,9 @@ using Microsoft.Kinect;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Globalization;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Timers;
 using VMultiDllWrapper;
 
 namespace TouchlessScreenLibrary
@@ -19,6 +15,7 @@ namespace TouchlessScreenLibrary
     {
         // Debug Logging Toggles
         private const bool velocityLogging = true;
+        private const bool pointingLogging = false;
 
         /// <summary>
         /// Width of output drawing
@@ -53,16 +50,18 @@ namespace TouchlessScreenLibrary
         private double? lastDisplacement;
         private double? lastTime;
         private double? lastVelocity;
-        private double velocityDownThreshold = -6;
-        private double velocityUpThreshold = 3;
-        private bool pressDownOne = false;
-        private bool pressDownOthers = false;
+        private double velocityDownThreshold = -80;
+        private double velocityUpThreshold = 20;
+        private bool pressDownOne;
+        private bool pressDownAll;
 
         private bool isInitalized;
         private Skeleton[] skeletons;
         private VMulti vMulti;
         //private bool pressOnce = false;
         //private int iterationCounter = 0;
+
+        private System.Timers.Timer touchTimer = new System.Timers.Timer();
 
         /// <summary>
         /// Intermediate storage for the depth data received from the camera
@@ -161,7 +160,7 @@ namespace TouchlessScreenLibrary
                 Y = y,
             };
 
-            //System.Diagnostics.Debug.WriteLine("WARNING: Pointing at - " + userPointer.ToString());
+            System.Diagnostics.Debug.WriteLineIf(pointingLogging, "WARNING: Pointing at - " + userPointer.ToString());
 
             // Translate into something usable
             //   NOTE: This ends up being 16px blocks with Adam's calibration settings. Not a great resolution, but decent.
@@ -177,7 +176,7 @@ namespace TouchlessScreenLibrary
 
             if (cursorX < 0 || cursorY < 0 || cursorX > System.Windows.SystemParameters.PrimaryScreenWidth || cursorY > System.Windows.SystemParameters.PrimaryScreenHeight)
             {
-                //System.Diagnostics.Debug.WriteLine("WARNING: Cursor position outside of bounds. X: {0} Y: {1}", cursorX, cursorY);
+                System.Diagnostics.Debug.WriteLineIf(pointingLogging, string.Format("WARNING: Cursor position outside of bounds. X: {0} Y: {1}", cursorX, cursorY));
             }
 
             return new Point2d<int>
@@ -231,7 +230,7 @@ namespace TouchlessScreenLibrary
 
         private double MeasureVelocity(double displacement1, double displacement2, double time1, double time2)
         {
-            return ((displacement2 - displacement1)/(time2 - time1)) * 100000; // The extra multiplication at the end is to enlarge the number from its normal tiny size of 10^5.
+            return ((displacement2 - displacement1)/(time2 - time1)) * 1000000; // The extra multiplication at the end is to enlarge the number from its normal tiny size of 10^5.
         }
         #endregion
 
@@ -329,6 +328,14 @@ namespace TouchlessScreenLibrary
                     // Allocate space to put the depth pixels we'll receive
                     this.depthPixels = new DepthImagePixel[this.Sensor.DepthStream.FramePixelDataLength];
                 }
+
+                this.touchTimer.Elapsed += delegate(object sender, ElapsedEventArgs args)
+                {
+                    this.pressDownAll = true;
+                    this.touchTimer.Stop();
+                };
+
+                this.touchTimer.Interval = 500;
             }
 
             this.isInitalized = true;
@@ -378,7 +385,7 @@ namespace TouchlessScreenLibrary
                 //    this.pressOnce = true;
                 //}
 
-                //System.Diagnostics.Debug.WriteLine("Hand Pos: " + ptHandPoint.ToString());
+                //System.Diagnostics.Debug.WriteLine(pointingLogging, "Hand Pos: " + ptHandPoint.ToString());
                 //System.Diagnostics.Debug.WriteLine("Pointer Pos: " + screenPos.ToString());
                 // *** END POINTER CODE
 
@@ -495,19 +502,20 @@ namespace TouchlessScreenLibrary
                                     {
                                         System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Pressed down.");
 
-                                        if (this.pressDownOne) // Already pressing
-                                        {
-                                            this.pressDownOthers = true;
-                                        }
-
-                                        this.pressDownOne = true;
+                                        this.touchTimer.Start();
                                     }
 
                                     if (meanVelocity > velocityUpThreshold)
                                     {
                                         System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Lifted Up");
-                                        this.pressDownOne = false;
-                                        this.pressDownOthers = false;
+                                        this.pressDownAll = false;
+
+                                        if (this.touchTimer.Enabled)
+                                        {
+                                            this.touchTimer.Stop();
+
+                                            this.pressDownOne = true;
+                                        }
                                     }
                                 }
 
@@ -517,7 +525,9 @@ namespace TouchlessScreenLibrary
                             this.lastDisplacement = currentDisplacement;
                             this.lastTime = currentTime;
 
-                            this.UpdateMultiTouch(fingerPoints, this.pressDownOne, this.pressDownOthers);
+                            this.UpdateMultiTouch(fingerPoints, this.pressDownOne, this.pressDownAll);
+
+                            this.pressDownOne = true;
                             //this.UpdateMultiTouch(new Point2d<int>(ptHandPoint), pressDownOne, true);
                         }
                     }
