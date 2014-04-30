@@ -127,7 +127,7 @@ namespace TouchlessScreenLibrary
             return filtered;
         }
 
-        private static int N_SAMPLES = 7;
+        private static int N_SAMPLES = 300;
         private static Tuple<int, int>[,] fingerSamples;
         private static  int[] missingDuration;
         /// <summary>
