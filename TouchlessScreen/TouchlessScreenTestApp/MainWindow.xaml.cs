@@ -128,7 +128,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             this.Image.Source = this.colorBitmap;
 
             // Add an event handler to be called whenever there is new color frame data
-            //this.touchlessScreen.Sensor.AllFramesReady += this.SensorDepthFrameReady;
+            this.touchlessScreen.Sensor.AllFramesReady += this.SensorDepthFrameReady;
             dataSourceFactory = new SDKDataSourceFactory();
             handDataSource = new HandDataSource(dataSourceFactory.CreateShapeDataSource());
             handDataSource.NewDataAvailable += new NewDataHandler<HandCollection>(this.handleHandData);

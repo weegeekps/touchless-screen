@@ -23,8 +23,8 @@ namespace TouchlessScreenLibrary
     public class TouchlessScreen : IDisposable
     {
         // Debug Logging Toggles
-        private const bool velocityLogging = true;
-        private const bool pointingLogging = false;
+        private const bool velocityLogging = false;
+        private const bool pointingLogging = true;
 
         /// <summary>
         /// Width of output drawing
@@ -50,7 +50,7 @@ namespace TouchlessScreenLibrary
         private bool[,] fingerPixels;
         private bool[,] contourPixels;
         private byte[] intensityValues;
-        public DepthImagePoint handPoint;
+        public Point3d<int> handPoint;
         public DepthImagePoint headPoint;
         public DepthImagePoint shoulderPoint;
 
@@ -258,6 +258,18 @@ namespace TouchlessScreenLibrary
             {
                 var hand = data.Hands[0];
 
+                this.handPoint = new Point3d<int>
+                {
+                    X = (int)Math.Ceiling(hand.Location.X),
+                    Y = (int)Math.Ceiling(hand.Location.Y),
+                    Z = (int)Math.Ceiling(hand.Location.Z),
+                };
+
+                System.Diagnostics.Debug.WriteLineIf(pointingLogging, "Hand at: " + this.handPoint);
+                Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
+
+                Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
+
                 fingerPoints = new List<Point2d<int>>(5);
                 int len = hand.FingerPoints.Count;
                 for (int i = 0; i < len; i++ )  fingerPoints.Add(new Point2d<int>((int)hand.FingerPoints[i].X,(int)hand.FingerPoints[i].Y));
@@ -272,7 +284,8 @@ namespace TouchlessScreenLibrary
                             nextFingerPixels[i.X, i.Y] = true;
                         }
                     });
-                    this.UpdateMultiTouch(fingerPoints, true);
+                    //this.UpdateMultiTouch(fingerPoints, true);
+                    this.HandleTouch();
                     fingerPixels = nextFingerPixels;
                 }
             }
@@ -387,9 +400,9 @@ namespace TouchlessScreenLibrary
         {
             try
             {
-                this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
+                //this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
                 this.headPoint = GetSkeletonDepthPoint(e, JointType.Head);
-                this.shoulderPoint = GetSkeletonDepthPoint(e, JointType.ShoulderLeft);
+                //this.shoulderPoint = GetSkeletonDepthPoint(e, JointType.ShoulderLeft);
                 //this.elbowPoint = GetSkeletonDepthPoint(e, JointType.ElbowLeft);
                 //this.wristPoint = GetSkeletonDepthPoint(e, JointType.WristLeft);
 
@@ -405,10 +418,10 @@ namespace TouchlessScreenLibrary
                 threshold = 500;
 
                 // *** POINTER CODE, SHOULD BE MOVED TO OWN METHOD WHEN DONE ***
-                Point3d<int> ptHandPoint = this.ConvertDepthImagePointToPoint3d(this.handPoint);
+                /*Point3d<int> ptHandPoint = this.ConvertDepthImagePointToPoint3d(this.handPoint);
                 Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
 
-                Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
+                Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);*/
                 //Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
 
                 //this.iterationCounter++;
@@ -440,7 +453,7 @@ namespace TouchlessScreenLibrary
 
                 
 
-                using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
+                /*using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
                 {
                     int minDepth;
                     int maxDepth;
@@ -495,88 +508,74 @@ namespace TouchlessScreenLibrary
                             // See the KinectDepthViewer class used by the KinectExplorer sample
                             // for a lookup table example.
                         }
-                        if (handPoint.Depth != 0)
-                        {
-                            /*//List<Tuple<int, int, int>> convexHull = ConvexHullCreator.CreateHull(points);
-                            List<Tuple<int, int>> contour = new List<Tuple<int, int>>();
-                            List<Tuple<int, int>> interior = new List<Tuple<int, int>>();
-                            contourPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
-                            int x, y;
-                            fingerPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
-                            findInteriorAndContour(interior);
-                            List<Tuple<int, int>> filtered_contour = (new ContourCreator(contourPixels)).findContour();
-                            //we could probably play around with these parameters alot
-                            Tuple<int, int> center = FingerFinder.findPalmCenter(interior, filtered_contour);
-                            /*FingerFinder.reduceFingerPoints(FingerFinder.findFingers(filtered_contour, 10, 0.75, center.Item1, center.Item2)).ForEach(i =>
-                            {
-                                fingerPixels[i.Item1, i.Item2] = true;
-                            });*/
-                            //List<Point2d<int>> fingerPoints = new List<Point2d<int>>(5); 
-                            fingerPoints.ForEach(i =>
-                            {
-                                if (i.X > 0 && i.Y > 0)
-                                {
-                                    fingerPixels[i.X, i.Y] = true;
-                                    //x = i.Item1;
-                                   // y = i.Item2;
-                                    //Point3d<int> ptFingerPoint = new Point3d<int>(x, y, handPoint.Depth);
-                                   // Point2d<int> fingerPos = this.MapRealspacePointToScreen(ptHeadPoint, ptFingerPoint, normalVector);
-                                    //fingerPoints.Add(fingerPos);
-                                }
-                            });
-
-                            double currentDisplacement = ptHandPoint.Z;
-                            double currentTime = DateTime.Now.Ticks;
-
-                            if (lastDisplacement.HasValue && lastTime.HasValue)
-                            {
-                                double currentVelocity = this.MeasureVelocity(lastDisplacement.Value, currentDisplacement, lastTime.Value, currentTime);
-
-                                if (lastVelocity.HasValue)
-                                {
-                                    double meanVelocity = (currentVelocity + lastVelocity.Value)/2;
-                                    //double meanVelocity = currentVelocity;
-
-                                    System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Mean Velocity: " + meanVelocity);
-
-                                    if (meanVelocity < velocityDownThreshold)
-                                    {
-                                        System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Pressed down.");
-
-                                        this.touchTimer.Start();
-                                    }
-
-                                    if (meanVelocity > velocityUpThreshold)
-                                    {
-                                        System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Lifted Up");
-                                        this.pressDownAll = false;
-
-                                        if (this.touchTimer.Enabled)
-                                        {
-                                            this.touchTimer.Stop();
-
-                                            this.pressDownOne = true;
-                                        }
-                                    }
-                                }
-
-                                this.lastVelocity = currentVelocity;
-                            }
-
-                            this.lastDisplacement = currentDisplacement;
-                            this.lastTime = currentTime;
-
-                            this.UpdateMultiTouch(fingerPoints, this.pressDownOne, this.pressDownAll);
-
-                            this.pressDownOne = true;
-                            //this.UpdateMultiTouch(new Point2d<int>(ptHandPoint), pressDownOne, true);
-                        }
                     }
-                }
+                }*/
             }
             catch (InvalidOperationException ex)
             {
                 System.Diagnostics.Debug.WriteLine(ex.Message);
+            }
+        }
+
+        public void HandleTouch()
+        {
+            Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
+
+            Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
+
+            if (pointingLogging)
+            {
+                Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, this.handPoint, normalVector);
+                System.Diagnostics.Debug.WriteLine("WARNING: Pointing at " + screenPos);
+            }
+
+            if (handPoint.Z != 0)
+            {
+                double currentDisplacement = handPoint.Z;
+                double currentTime = DateTime.Now.Ticks;
+
+                if (lastDisplacement.HasValue && lastTime.HasValue)
+                {
+                    double currentVelocity = this.MeasureVelocity(lastDisplacement.Value, currentDisplacement, lastTime.Value, currentTime);
+
+                    if (lastVelocity.HasValue)
+                    {
+                        double meanVelocity = (currentVelocity + lastVelocity.Value)/2;
+                        //double meanVelocity = currentVelocity;
+
+                        System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Mean Velocity: " + meanVelocity);
+
+                        if (meanVelocity < velocityDownThreshold)
+                        {
+                            System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Pressed down.");
+
+                            this.touchTimer.Start();
+                        }
+
+                        if (meanVelocity > velocityUpThreshold)
+                        {
+                            System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Lifted Up");
+                            this.pressDownAll = false;
+
+                            if (this.touchTimer.Enabled)
+                            {
+                                this.touchTimer.Stop();
+
+                                this.pressDownOne = true;
+                            }
+                        }
+                    }
+
+                    this.lastVelocity = currentVelocity;
+                }
+
+                this.lastDisplacement = currentDisplacement;
+                this.lastTime = currentTime;
+
+                //this.UpdateMultiTouch(this.fingerPoints, this.pressDownOne, this.pressDownAll);
+
+                this.pressDownOne = true;
+                //this.UpdateMultiTouch(new Point2d<int>(ptHandPoint), pressDownOne, true);
             }
         }
 
