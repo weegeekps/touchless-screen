@@ -43,6 +43,7 @@ namespace TouchlessScreenLibrary
         private bool[,] contourPixels;
         private byte[] intensityValues;
         public DepthImagePoint handPoint;
+        public DepthImagePoint rightHandPoint;
         public DepthImagePoint headPoint;
         public DepthImagePoint shoulderPoint;
         //public DepthImagePoint elbowPoint;
@@ -199,7 +200,7 @@ namespace TouchlessScreenLibrary
 
         private void UpdateMultiTouch(Point2d<int> position, bool pressOne, bool pressOthers = false)
         {
-            List<Point2d<int>> positions = new List<Point2d<int>>(1);
+            List<Point2d<int>> positions = new List<Point2d<int>>(2);
 
             positions.Add(position);
 
@@ -208,23 +209,26 @@ namespace TouchlessScreenLibrary
 
         private void UpdateMultiTouch(List<Point2d<int>> positions, bool pressOne, bool pressOthers = false)
         {
-            List<MultitouchPointerInfo> pointers = new List<MultitouchPointerInfo>(1);
+            List<MultitouchPointerInfo> pointers = new List<MultitouchPointerInfo>(2);
             //positions = positions.OrderBy(i => i.Y).ToList();
             //var high_position = positions.Last();
             for (int i = 0; i < positions.Count; ++i)
             {
                 pointers.Add(new MultitouchPointerInfo());
-                pointers[i].X = positions[i].X/System.Windows.SystemParameters.PrimaryScreenWidth;
-                pointers[i].Y = positions[i].Y/System.Windows.SystemParameters.PrimaryScreenHeight;
-
+                //devide the screen sizes by three to magnify hand movements to make reaching the entire screen with one hand possible
+                pointers[i].X = positions[i].X/(System.Windows.SystemParameters.PrimaryScreenWidth/3);
+                pointers[i].Y = positions[i].Y/(System.Windows.SystemParameters.PrimaryScreenHeight/3);
+                //System.Console.Write("X: " + positions[i].X + " Y: " + positions[i].Y + "    ");
+                
                 pointers[i].Down = pressOthers;
 
-                if (i > positions.Count - 2 && pressOne) // The fingers are read from left to right, and we want to try to select the index finger for the tap since its most natural.
+                if (i == 0 && pressOne) // The fingers are read from left to right, and we want to try to select the index finger for the tap since its most natural.
                 {
                     pointers[i].Down = true;
                     pressOne = false;
                 }
             }
+            //System.Console.WriteLine();
             //pointers.Add(new MultitouchPointerInfo());
             //pointers[0].X = high_position.X / System.Windows.SystemParameters.PrimaryScreenWidth;
            // pointers[0].Y = high_position.Y / System.Windows.SystemParameters.PrimaryScreenHeight;
@@ -343,197 +347,88 @@ namespace TouchlessScreenLibrary
 
         public void HandleSensorEvent(object sender, AllFramesReadyEventArgs e)
         {
-            try
-            {
                 this.handPoint = GetSkeletonDepthPoint(e, JointType.HandLeft);
+                this.rightHandPoint = GetSkeletonDepthPoint(e, JointType.HandRight);
                 this.headPoint = GetSkeletonDepthPoint(e, JointType.Head);
                 this.shoulderPoint = GetSkeletonDepthPoint(e, JointType.ShoulderLeft);
-                //this.elbowPoint = GetSkeletonDepthPoint(e, JointType.ElbowLeft);
-                //this.wristPoint = GetSkeletonDepthPoint(e, JointType.WristLeft);
-
-                //get arm length to determine threshold
-                //double lenPartOne = Math.Sqrt(Math.Pow(shoulderPoint.X - elbowPoint.X,2) + Math.Pow(shoulderPoint.Y - elbowPoint.Y,2) + Math.Pow(shoulderPoint.Depth - elbowPoint.Depth,2));
-                //double lenPartTwo = Math.Sqrt(Math.Pow(elbowPoint.X - wristPoint.X, 2) + Math.Pow(elbowPoint.Y - wristPoint.Y, 2) + Math.Pow(elbowPoint.Depth - wristPoint.Depth, 2));
-                //double lenPartThree = Math.Sqrt(Math.Pow(wristPoint.X - handPoint.X, 2) + Math.Pow(wristPoint.Y - handPoint.Y, 2) + Math.Pow(wristPoint.Depth - handPoint.Depth, 2));
-                //double armLength = lenPartOne + lenPartTwo + lenPartThree;
-
-                //set click zone threshold as 25mm less than arm length
-                //may need to move to own method
-                //threshold = Convert.ToInt32(armLength) - 25;
                 threshold = 500;
-
                 // *** POINTER CODE, SHOULD BE MOVED TO OWN METHOD WHEN DONE ***
                 Point3d<int> ptHandPoint = this.ConvertDepthImagePointToPoint3d(this.handPoint);
                 Point3d<int> ptHeadPoint = this.ConvertDepthImagePointToPoint3d(this.headPoint);
-
+                Point3d<int> ptRightHandPoint = this.ConvertDepthImagePointToPoint3d(this.rightHandPoint);
                 Point3d<int> normalVector = this.CalculateNormalVector(DEPTH_UPPER_LEFT, DEPTH_CENTER, DEPTH_LOWER_RIGHT);
-                //Point2d<int> screenPos = this.MapRealspacePointToScreen(ptHeadPoint, ptHandPoint, normalVector);
-
-                //this.iterationCounter++;
-                //if (this.iterationCounter % 100 == 0)
-                //{
-                //    this.pressOnce = false;
-                //}
-
-                //if (this.pressOnce == false)
-                //{
-                //    /*this.UpdateMultiTouch(new Point2d<int>(30, 1060), false);
-                //    this.UpdateMultiTouch(new Point2d<int>(30, 1060), true);
-                //    this.UpdateMultiTouch(new Point2d<int>(30, 1060), false);*/
-                //    this.UpdateMultiTouch(screenPos, true);
-                //    this.pressOnce = true;
-                //}
-
-                //System.Diagnostics.Debug.WriteLine("Hand Pos: " + ptHandPoint.ToString());
-                //System.Diagnostics.Debug.WriteLine("Pointer Pos: " + screenPos.ToString());
-                // *** END POINTER CODE
-
-                //enter click zone threshold
-                
-
-                //Point3d<int> pointerRay = this.CalculateVector(this.handPoint, this.headPoint);
-                //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString());
-                //System.Diagnostics.Debug.WriteLine(pointerRay);
-                //System.Diagnostics.Debug.WriteLine(this.ConvertDepthImagePointToPoint3d(this.handPoint).ToString() + " && " + this.ConvertDepthImagePointToPoint3d(this.headPoint).ToString());
 
                 
 
                 using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
                 {
-                    int minDepth;
-                    int maxDepth;
-                    int maxY, minY, maxX, minX, centerX = 0, centerY = 0;
-                    //int threshold;
-
-                    if (depthFrame != null)
-                    {
-                        // Copy the pixel data from the image to a temporary array
-                        depthFrame.CopyDepthImagePixelDataTo(this.depthPixels);
-                        if (handPoint.Depth == 0)
+                    
+                     double currentDisplacement = ptHandPoint.Z;
+                     double currentTime = DateTime.Now.Ticks;
+                     depthFrame.CopyDepthImagePixelDataTo(this.depthPixels); 
+                     if (lastDisplacement.HasValue && lastTime.HasValue)
+                     {
+                        double currentVelocity = this.MeasureVelocity(lastDisplacement.Value, currentDisplacement, lastTime.Value, currentTime);
+                        
+                        if (lastVelocity.HasValue)
                         {
-                            minDepth = depthFrame.MinDepth;
-                            maxDepth = depthFrame.MaxDepth;
-                            minX = 0;
-                            maxX = depthFrame.Width;
-                            minY = 0;
-                            maxY = depthFrame.Height;
-                        }
-                        else
-                        {
-                            // Get the min and max reliable depth for the current frame
-                            minDepth = Math.Max(depthFrame.MinDepth, handPoint.Depth - 50);
-                            maxDepth = Math.Min(depthFrame.MaxDepth, handPoint.Depth + 50);
-                            centerX = handPoint.X;
-                            centerY = handPoint.Y;
-                            minX = Math.Max(0, centerX - 90);
-                            maxX = Math.Min(depthFrame.Height, centerX + 90);
-                            minY = Math.Max(0, centerY - 110);
-                            maxY = Math.Min(depthFrame.Height, centerY + 90);
-                        }
+                            double meanVelocity = (currentVelocity + lastVelocity.Value)/2;
+                                   
+                            System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Mean Velocity: " + meanVelocity);
 
-                        intensityValues = new byte[this.depthPixels.Length];
-                        for (int i = 0; i < this.depthPixels.Length; ++i)
-                        {
-                            // Get the depth for this pixel
-                            short depth = depthPixels[i].Depth;
-                            int x = i % IMG_WIDTH;
-                            int y = i / IMG_WIDTH;
-
-                            byte intensity = (byte)(depth >= minDepth && depth <= maxDepth && y > minY && y < maxY && x > minX && x < maxX ? depth : 0);
-                            intensityValues[i] = intensity;
-                            handPixels[x, y] = intensity != 0;
-
-                            // To convert to a byte, we're discarding the most-significant
-                            // rather than least-significant bits.
-                            // We're preserving detail, although the intensity will "wrap."
-                            // Values outside the reliable depth range are mapped to 0 (black).
-
-                            // Note: Using conditionals in this loop could degrade performance.
-                            // Consider using a lookup table instead when writing production code.
-                            // See the KinectDepthViewer class used by the KinectExplorer sample
-                            // for a lookup table example.
-                        }
-                        if (handPoint.Depth != 0)
-                        {
-                            //List<Tuple<int, int, int>> convexHull = ConvexHullCreator.CreateHull(points);
-                            List<Tuple<int, int>> contour = new List<Tuple<int, int>>();
-                            List<Tuple<int, int>> interior = new List<Tuple<int, int>>();
-                            contourPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
-                            int x, y;
-                            fingerPixels = new bool[IMG_WIDTH, IMG_HEIGHT];
-                            findInteriorAndContour(interior);
-                            List<Tuple<int, int>> filtered_contour = (new ContourCreator(contourPixels)).findContour();
-                            //we could probably play around with these parameters alot
-                            Tuple<int, int> center = FingerFinder.findPalmCenter(interior, filtered_contour);
-                            /*FingerFinder.reduceFingerPoints(FingerFinder.findFingers(filtered_contour, 10, 0.75, center.Item1, center.Item2)).ForEach(i =>
+                            if (meanVelocity < velocityDownThreshold)
                             {
-                                fingerPixels[i.Item1, i.Item2] = true;
-                            });*/
-                            List<Point2d<int>> fingerPoints = new List<Point2d<int>>(5); 
-                            FingerFinder.findFingersByContour(filtered_contour, center.Item1, center.Item2).ForEach(i =>
-                            {
-                                if (i.Item1 > 0 && i.Item2 > 0)
+                                System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Pressed down.");
+
+                                /*if (this.pressDownOne) // Already pressing
                                 {
-                                    fingerPixels[i.Item1, i.Item2] = true;
-                                    x = i.Item1;
-                                    y = i.Item2;
-                                    Point3d<int> ptFingerPoint = new Point3d<int>(x, y, handPoint.Depth);
-                                    Point2d<int> fingerPos = this.MapRealspacePointToScreen(ptHeadPoint, ptFingerPoint, normalVector);
-                                    fingerPoints.Add(fingerPos);
-                                }
-                            });
+                                    this.pressDownOthers = true;
+                                }*/
 
-                            double currentDisplacement = ptHandPoint.Z;
-                            double currentTime = DateTime.Now.Ticks;
+                                    this.pressDownOne = true;
+                             }
 
-                            if (lastDisplacement.HasValue && lastTime.HasValue)
-                            {
-                                double currentVelocity = this.MeasureVelocity(lastDisplacement.Value, currentDisplacement, lastTime.Value, currentTime);
-
-                                if (lastVelocity.HasValue)
-                                {
-                                    double meanVelocity = (currentVelocity + lastVelocity.Value)/2;
-                                    //double meanVelocity = currentVelocity;
-
-                                    System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Mean Velocity: " + meanVelocity);
-
-                                    if (meanVelocity < velocityDownThreshold)
-                                    {
-                                        System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Pressed down.");
-
-                                        if (this.pressDownOne) // Already pressing
-                                        {
-                                            this.pressDownOthers = true;
-                                        }
-
-                                        this.pressDownOne = true;
-                                    }
-
-                                    if (meanVelocity > velocityUpThreshold)
-                                    {
-                                        System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Lifted Up");
-                                        this.pressDownOne = false;
-                                        this.pressDownOthers = false;
-                                    }
-                                }
+                             if (meanVelocity > velocityUpThreshold)
+                             {
+                               System.Diagnostics.Debug.WriteLineIf(velocityLogging, "Lifted Up");
+                               this.pressDownOne = false;
+                               this.pressDownOthers = false;
+                             }
 
                                 this.lastVelocity = currentVelocity;
-                            }
+                         }
+                        this.lastVelocity = currentVelocity;
 
                             this.lastDisplacement = currentDisplacement;
                             this.lastTime = currentTime;
-
-                            this.UpdateMultiTouch(fingerPoints, this.pressDownOne, this.pressDownOthers);
+                            List<Point2d<int>> handPoints = new List<Point2d<int>>(2);
+                            if(handPoint.Depth > 0) handPoints.Add(new Point2d<int>(handPoint.X, handPoint.Y));
+                            if(rightHandPoint.Depth > 0)handPoints.Add(new Point2d<int>(rightHandPoint.X, handPoint.Y));
+                            for(int i=0; i < this.depthPixels.Length; ++i)
+                            {
+                                int x = i % 640;
+                                int y = i / 640;
+                                if((Math.Abs(x-handPoint.X) < 5 && Math.Abs(y-handPoint.Y) < 5)
+                                ||( Math.Abs(x-rightHandPoint.X) < 5 && Math.Abs(y-rightHandPoint.Y) < 5))
+                                {
+                                    fingerPixels[x, y] = true;
+                                }
+                                else fingerPixels[x, y] = false;
+                            }
+                            //this.pressDownOthers = ptRightHandPoint.Z < 20;
+                            System.Console.WriteLine(ptRightHandPoint.Z);
+                            this.UpdateMultiTouch(handPoints, this.pressDownOne, this.pressDownOthers); //right velocity tracking not enabled
                             //this.UpdateMultiTouch(new Point2d<int>(ptHandPoint), pressDownOne, true);
                         }
+                    else
+                     {
+                         this.lastDisplacement = currentDisplacement;
+                         this.lastTime = currentTime;
+                     }
+                     
                     }
                 }
-            }
-            catch (InvalidOperationException ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
-            }
-        }
+
 
         public void DrawBitmap(WriteableBitmap colorBitmap, byte[] colorPixels)
         {
@@ -547,13 +442,14 @@ namespace TouchlessScreenLibrary
                 int y = i / 640;
                 if (handPoint.Depth == 0)
                 {
-                    if (this.intensityValues.Length < 1)
+                    /*if (this.intensityValues.Length < 1)
                     {
                         System.Diagnostics.Debug.WriteLine("WARNING: Intensity Values length was less than 0.");
                         return;
-                    }
+                    }*/
 
-                    byte intensity = intensityValues[i];
+                    //byte intensity = intensityValues[i];
+                    byte intensity = (byte)depth;
                     // Write out blue byte
                     colorPixels[colorPixelIndex++] = intensity;
 
